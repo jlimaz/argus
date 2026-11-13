@@ -9,7 +9,8 @@ Built at SprintHack@ND by Gabriel Marques and José Lima. Everything runs on one
 | Read | For |
 |---|---|
 | [documentation/document.md](documentation/document.md) | The full project write-up: the problem, how Argus answers it, results, limits and a pilot plan |
-| [documents/local-setup.md](documents/local-setup.md) | Step-by-step setup on a new machine, with troubleshooting |
+| [documentation/local-setup.md](documentation/local-setup.md) | Step-by-step setup on a new machine, with troubleshooting |
+| [mod-classifier/README.md](mod-classifier/README.md) | The signal classifier for raw IQ recordings, its trained models and the Burst Router page |
 | [frontend/README.md](frontend/README.md) | The dashboard and the chat agent |
 | [finetune/README.md](finetune/README.md) | How the checkpoint is trained and evaluated |
 
@@ -70,6 +71,8 @@ The first 100 rows are classified. Ask the chat to analyze the remaining rows, o
 Several files can be selected in each tab. Data files are joined in order. Knowledge files are merged, so one question can be split across files, as in [data/data_1.json](data/data_1.json) and [data/data_2.json](data/data_2.json).
 
 A file that does not fit is refused with a message that names the file and the row or question at fault, for example `Row 3 is missing bandwidth_hz.`
+
+**From a capture.** `python -m pipeline.ingest` turns an rtl_power or hackrf_sweep sweep (CSV), a raw `.cu8` / `.cs8` recording, or a SigMF recording into a data file, one row per signal found. See [documentation/local-setup.md](documentation/local-setup.md#from-a-capture-file).
 
 ## How it works
 
@@ -151,6 +154,16 @@ Read that number with two things in mind:
 
 Training takes hours and is done beforehand. The steps, the data sources and the earlier runs are in [finetune/README.md](finetune/README.md) and in [the write-up](documentation/document.md#7-the-model).
 
+## The IQ signal classifier
+
+[mod-classifier/](mod-classifier/) is a second classifier, separate from Laya. Laya reads three text fields per signal; this one reads the raw IQ samples of each burst and names one of eight classes (`drone_link`, `wifi`, `bluetooth`, `background`, `gnss_jammer`, `lora`, `pulsed_radar`, `other_ism`), or `unknown` when it is not confident.
+
+- Three trained models are committed in `mod-classifier/runs/crc/`. The best, a small CNN, scores 91.4% on 34,488 held-out windows of public lab recordings.
+- The **Burst Router** ([mod-classifier/ui/](mod-classifier/ui/README.md)) is its own local page: upload an IQ recording and see each burst classified.
+- `python -m pipeline.ingest --classify --model <run folder>` adds the class to each row of a data file built from an IQ recording.
+
+It is not wired into the dashboard, it has not been measured on the team's own captures, and radar has no test data. The state and the open gaps are in [mod-classifier/STATUS.md](mod-classifier/STATUS.md).
+
 ## Data
 
 | File | What is there |
@@ -181,15 +194,13 @@ pip install -r requirements-dev.txt
 python -m pytest tests
 ```
 
-The command-line run, the tests and the scripts in `finetune/` still read the sample files under their earlier names, `data/questions_20.json` and `data/test_observations.jsonl`. Those are now `data/data-full.json` and `data/observations-full.jsonl`.
-
 ## Limits
 
 - The app classifies 100 rows of a file per run; the rest are classified on request from the chat.
 - One result is kept at a time, in memory. It survives a page reload but not a restart of the Laya service.
 - One run at a time, one operator.
 - The model sees three fields as text. It has not been validated on signals captured off the air.
-- The app does not read a live SDR, a raw IQ file or a spectrogram image. Bandwidth is measured from IQ samples only offline, in [finetune/sources/panoradio.py](finetune/sources/panoradio.py), to build the training data.
+- The dashboard does not read a live SDR, a capture file or a spectrogram image. Sweeps and IQ recordings are turned into data files from the command line first (`python -m pipeline.ingest`).
 - Anomalies are low-confidence observations and rare answers, nothing more.
 
 ## Repository map
@@ -201,5 +212,5 @@ The command-line run, the tests and the scripts in `finetune/` still read the sa
 | [finetune/](finetune/) | Data converters, dataset builder, training and evaluation scripts |
 | [data/](data/) | The knowledge files, the 774 test observations and the training observations |
 | [tests/](tests/) | Tests for file checking, the chat context, checkpoint selection and the HTTP service |
-| [documentation/](documentation/) | The project write-up and its figures |
-| [documents/](documents/) | The local setup guide |
+| [mod-classifier/](mod-classifier/) | The IQ signal classifier: dataset loaders, training on CRC, trained models and the Burst Router page |
+| [documentation/](documentation/) | The project write-up with its figures, and the local setup guide |

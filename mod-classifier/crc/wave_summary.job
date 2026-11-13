@@ -1,0 +1,86 @@
+#!/bin/bash
+# One email when a training wave has ended: a results table in the message, and
+# every run's progress.png and job log attached. Usually submitted by
+# crc/submit_wave.sh, held until all of the wave's training jobs end. By hand:
+#
+#   qsub -q long -hold_jid <train job ids> crc/wave_summary.job w2 <train job ids>
+#
+# Arguments: WAVE (run folders are runs/*_<wave>), JOBS (comma-separated training
+# job ids, for their logs), and optionally EXTRA (comma-separated more log files to
+# attach, e.g. the manifest job's log). Every run's history.jsonl (one line per
+# epoch) and metrics.json are attached too. Settings: MCLS_MAIL_TO (default $USER@nd.edu).
+#
+#$ -N mcls_summary
+#$ -pe smp 1
+#$ -j y
+#$ -o runs/crc_logs/
+#$ -cwd
+set -euo pipefail
+
+[ -f crc/common.sh ] || { echo "ERROR: submit from mod-classifier/" >&2; exit 1; }
+# shellcheck source=common.sh
+source crc/common.sh
+
+WAVE="${1:?wave name}"
+JOBS="${2:?comma-separated training job ids}"
+EXTRA="${3:-}"
+MAIL_TO="${MCLS_MAIL_TO:-${USER}@nd.edu}"
+
+mcls_load_python
+mcls_activate_venv
+
+DIR="$(mktemp -d)"
+trap 'rm -rf "$DIR"' EXIT
+
+python - "$WAVE" > "$DIR/summary.txt" <<'EOF'
+import glob, json, sys
+wave = sys.argv[1]
+print(f"Wave {wave}: test results (real windows only)\n")
+print(f"{'run':30s} {'window F1':>9s} {'burst F1':>9s} {'accuracy':>9s} {'epochs':>7s}")
+for run in sorted(glob.glob(f"runs/*_{wave}")):
+    name = run.split("/")[-1]
+    try:
+        h = json.load(open(f"{run}/metrics.json"))["headline"]
+        f1, bf1, acc = f"{h['window_macro_f1']:.3f}", f"{h['burst_macro_f1']:.3f}", f"{h['window_accuracy']:.3f}"
+    except (OSError, KeyError, ValueError):
+        f1 = bf1 = acc = "failed"
+    try:
+        epochs = str(sum(1 for _ in open(f"{run}/history.jsonl")))
+    except OSError:
+        epochs = "-"
+    print(f"{name:30s} {f1:>9s} {bf1:>9s} {acc:>9s} {epochs:>7s}")
+print("\nAttached: each neural run's loss plot and every job's log.")
+EOF
+cat "$DIR/summary.txt"
+
+attach=()
+for png in runs/*_"$WAVE"/progress.png; do
+    [ -f "$png" ] || continue
+    cp "$png" "$DIR/$(basename "$(dirname "$png")").png"
+    attach+=(-a "$DIR/$(basename "$(dirname "$png")").png")
+done
+IFS=',' read -r -a IDS <<< "$JOBS"
+for id in "${IDS[@]}"; do
+    log="runs/crc_logs/mcls_train.o$id"
+    [ -f "$log" ] || continue
+    grep -v -E '^(Loading|  Loading)' "$log" > "$DIR/log_$id.txt" || true
+    attach+=(-a "$DIR/log_$id.txt")
+done
+for run in runs/*_"$WAVE"; do
+    name="$(basename "$run")"
+    for f in history.jsonl metrics.json; do
+        [ -f "$run/$f" ] || continue
+        cp "$run/$f" "$DIR/${name}_$f.txt"   # .txt so mail clients open it inline
+        attach+=(-a "$DIR/${name}_$f.txt")
+    done
+done
+if [ -n "$EXTRA" ]; then
+    IFS=',' read -r -a MORE <<< "$EXTRA"
+    for f in "${MORE[@]}"; do
+        [ -f "$f" ] || continue
+        grep -v -E '^(Loading|  Loading)' "$f" > "$DIR/$(basename "$f").txt" || true
+        attach+=(-a "$DIR/$(basename "$f").txt")
+    done
+fi
+mailx -s "[mcls] wave $WAVE finished" "${attach[@]}" "$MAIL_TO" < "$DIR/summary.txt"
+echo "emailed $MAIL_TO"

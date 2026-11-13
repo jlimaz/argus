@@ -1,0 +1,176 @@
+#!/bin/bash
+# Train one model, then calibrate and evaluate it. Submit from mod-classifier/:
+#
+#   qsub -q gpu@@crc_gpu -l gpu_card=1 crc/train.job configs/cnn1d.toml # neural model on an A10 or RTX 6000
+#     (not plain -q gpu: its TITAN Xp nodes are too old for this torch build)
+#   qsub -q long crc/train.job configs/baseline.toml                    # baseline on a CPU node
+#   qsub -q gpu -l gpu_card=1 crc/train.job configs/cnn1d.toml --seed 2 # extra args go to mcls.train
+#   qsub -q gpu -l gpu_card=1 crc/train.job configs/cnn1d.toml --resume # continue a stopped run
+#
+# Steps: python -m mcls.train --config CONFIG [ARGS]  ->  runs/<name>/
+#        python -m mcls.evaluate.calibrate --run runs/<name>   (writes calibration.json)
+#        python -m mcls.evaluate --run runs/<name> --manifest <the config's manifest>
+# Calibration or evaluation failing does not undo the training run; rerun them by
+# hand on a front end. Log: runs/crc_logs/mcls_train.o<job id>.
+#
+# Weights are saved as training goes (neural models): runs/<name>/last.pt after
+# every epoch (model, averaged weights, optimizer, schedule, early-stopping state)
+# and runs/<name>/checkpoint.pt whenever validation improves. Both are written to
+# a temporary file and renamed, so a job killed mid-save keeps the previous file.
+# If a job dies, submit it again with --resume: it continues from the last
+# finished epoch.
+#
+# Progress (neural models): after every epoch runs/<name>/progress.png (train and
+# validation loss, validation macro-F1) is redrawn and a copy kept as
+# runs/<name>/progress/epoch_NNN.png; history.jsonl gains one line. Every
+# MCLS_EMAIL_EVERY_EPOCHS epochs (default 10) the newest plot and the training log so
+# far are emailed, and once more at the end with the test results.
+#
+# Nothing here needs a laptop or a shell to stay open: the scheduler runs the job,
+# and the job itself writes every file and sends every email.
+#
+# Settings (qsub -v NAME=value,NAME=value):
+#   MCLS_VENV                 venv built by setup_env.sh (default $HOME/venvs/mcls)
+#   MCLS_SKIP_EVAL=1          stop after training
+#   MCLS_MAIL_TO              where progress emails go (default $USER@nd.edu); empty = no emails
+#   MCLS_EMAIL_EVERY_EPOCHS   epochs between two progress emails (default 10);
+#                             0 = only the final email
+#
+#$ -N mcls_train
+#$ -pe smp 8
+#$ -j y
+#$ -o runs/crc_logs/
+#$ -cwd
+set -euo pipefail
+
+die() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+[ -f crc/common.sh ] || die "submit from mod-classifier/ (crc/common.sh not found in $PWD)"
+# shellcheck source=common.sh
+source crc/common.sh
+
+CONFIG="${1:-}"
+[ -n "$CONFIG" ] || die "usage: qsub [queue options] crc/train.job CONFIG [mcls.train args]"
+[ -f "$CONFIG" ] || die "config not found: $CONFIG"
+shift
+
+MAIL_TO="${MCLS_MAIL_TO-${USER:-}@nd.edu}"
+EMAIL_EVERY="${MCLS_EMAIL_EVERY_EPOCHS:-10}"
+case "$EMAIL_EVERY" in
+    '' | *[!0-9]*) die "MCLS_EMAIL_EVERY_EPOCHS must be a whole number, got '$EMAIL_EVERY'" ;;
+esac
+mcls_have mailx || MAIL_TO=""
+
+echo "job ${JOB_ID:-local} on $(hostname) at $(date)"
+echo "queue: ${QUEUE:-none}  slots: ${NSLOTS:-none}  config: $CONFIG  args: $*"
+echo "progress emails: ${MAIL_TO:-off}${MAIL_TO:+ (every ${EMAIL_EVERY} epochs and at the end)}"
+mcls_load_python
+mcls_activate_venv
+export OMP_NUM_THREADS="${NSLOTS:-1}"
+if mcls_have nvidia-smi; then
+    nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader || true
+fi
+python -c 'import torch; print("torch", torch.__version__, "cuda", torch.cuda.is_available())' || true
+
+# Keep the log readable while the job runs (UGE buffers otherwise).
+export PYTHONUNBUFFERED=1
+
+LOG_TMP="$(mktemp)"
+WATCHER=""
+cleanup() {
+    [ -n "$WATCHER" ] && kill "$WATCHER" 2>/dev/null || true
+    rm -f "$LOG_TMP"
+}
+trap cleanup EXIT
+
+# ---- progress emails --------------------------------------------------------
+run_dir_from_log() {
+    sed -n 's/^mcls\.train: .* -> //p' "$LOG_TMP" | tail -1
+}
+
+# send_progress RUN_DIR SUBJECT_TAIL: mail the current plot and the training log so far
+# (as train_log.txt), with the epoch lines as the message text.
+send_progress() {
+    local run_dir="$1" tail_text="$2" dir
+    [ -n "$MAIL_TO" ] || return 0
+    dir="$(mktemp -d)"
+    local attach=()
+    if [ -f "$run_dir/progress.png" ]; then
+        cp "$run_dir/progress.png" "$dir/progress.png"
+        attach+=(-a "$dir/progress.png")
+    fi
+    grep -v -E '^(Loading|  Loading)' "$LOG_TMP" > "$dir/train_log.txt" || true
+    attach+=(-a "$dir/train_log.txt")
+    grep -E '^(epoch |run folder|temperature|  test|runs/|\[)' "$LOG_TMP" | tail -40 |
+        mailx -s "[mcls] $(basename "$run_dir") job ${JOB_ID:-local}: $tail_text" "${attach[@]}" "$MAIL_TO" ||
+        echo "(progress email failed)"
+    rm -rf "$dir"
+}
+
+# Last finished epoch of the run (from history.jsonl), or -1.
+last_epoch() {
+    local line
+    line="$(tail -1 "$1/history.jsonl" 2>/dev/null || true)"
+    line="${line#*\"epoch\": }"
+    line="${line%%,*}"
+    case "$line" in '' | *[!0-9]*) echo -1 ;; *) echo "$line" ;; esac
+}
+
+# Runs beside training: mails the plot each time another EMAIL_EVERY epochs have finished.
+# A resumed run starts counting from where it is, so it does not resend old milestones.
+watch_progress() {
+    local run_dir="" epoch sent=-1
+    while :; do
+        sleep 10
+        [ -n "$run_dir" ] || run_dir="$(run_dir_from_log)"
+        [ -n "$run_dir" ] || continue
+        epoch="$(last_epoch "$run_dir")"
+        [ "$epoch" -ge 0 ] || continue
+        if [ "$sent" -lt 0 ]; then
+            sent=$(( (epoch + 1) / EMAIL_EVERY ))   # milestones already passed before this job
+            [ "$epoch" -lt "$EMAIL_EVERY" ] && sent=0
+            continue
+        fi
+        if [ $(( (epoch + 1) / EMAIL_EVERY )) -gt "$sent" ]; then
+            sent=$(( (epoch + 1) / EMAIL_EVERY ))
+            send_progress "$run_dir" "$(grep '^epoch ' "$LOG_TMP" | tail -1)"
+        fi
+    done
+}
+
+if [ -n "$MAIL_TO" ] && [ "$EMAIL_EVERY" -gt 0 ]; then
+    watch_progress &
+    WATCHER=$!
+fi
+
+# ---- train -------------------------------------------------------------------
+echo "[$(date +%T)] train"
+python -m mcls.train --config "$CONFIG" "$@" 2>&1 | tee "$LOG_TMP"
+if [ -n "$WATCHER" ]; then
+    kill "$WATCHER" 2>/dev/null || true
+    WATCHER=""
+fi
+RUN_DIR="$(run_dir_from_log)"
+[ -n "$RUN_DIR" ] && [ -d "$RUN_DIR" ] || die "could not find the run folder in the training output"
+echo "run folder: $RUN_DIR" | tee -a "$LOG_TMP"
+
+if [ "${MCLS_SKIP_EVAL:-0}" = 1 ]; then
+    echo "MCLS_SKIP_EVAL=1: stopping after training"
+    send_progress "$RUN_DIR" "training finished (evaluation skipped)"
+    exit 0
+fi
+
+# ---- calibrate, evaluate -----------------------------------------------------
+status=0
+echo "[$(date +%T)] calibrate"
+python -m mcls.evaluate.calibrate --run "$RUN_DIR" 2>&1 | tee -a "$LOG_TMP" || { echo "calibrate failed"; status=1; }
+echo "[$(date +%T)] evaluate"
+# evaluate needs the manifest to check is_real on test rows (PLAN 3.4); take it from the run's config.
+MANIFEST="$(python -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb"))["data"]["manifest"])' "$RUN_DIR/config.toml")"
+python -m mcls.evaluate --run "$RUN_DIR" --manifest "$MANIFEST" 2>&1 | tee -a "$LOG_TMP" || { echo "evaluate failed"; status=1; }
+echo "[$(date +%T)] done: $RUN_DIR"
+send_progress "$RUN_DIR" "finished, $(grep -m1 '^  test' "$LOG_TMP" | tr -s ' ' || echo 'no test result')"
+exit "$status"

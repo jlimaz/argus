@@ -20,7 +20,7 @@ function describeRows(rows: unknown[]): FileCheck {
   return { ok: true, role: "data", detail: plural(rows.length, "row") };
 }
 
-// One JSON object per line, as in data/test_observations.jsonl.
+// One JSON object per line, as in data/observations-full.jsonl.
 function parseLines(text: string): unknown[] | null {
   const rows: unknown[] = [];
   for (const line of text.split("\n")) {

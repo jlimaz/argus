@@ -10,8 +10,8 @@ import laya
 from finetune.sources.common import ROOT, read_jsonl
 from pipeline.laya import classify, pick_device, release
 
-QUESTIONS = ROOT / "data" / "questions_20.json"
-TEST = ROOT / "data" / "test_observations.jsonl"
+QUESTIONS = ROOT / "data" / "data-full.json"
+TEST = ROOT / "data" / "observations-full.jsonl"
 BASE_CHECKPOINT = "convaiinnovations/laya"
 QUESTION = "mode"
 # A fine-tune is good enough when it clears both bars on the test set.

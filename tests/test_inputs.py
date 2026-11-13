@@ -13,9 +13,9 @@ from pipeline.inputs import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-TESTE1 = (ROOT / "data" / "teste1.json").read_text()
-TESTE2 = (ROOT / "data" / "teste2.json").read_text()
-QUESTIONS_20 = json.loads((ROOT / "data" / "questions_20.json").read_text())
+DATA_1 = (ROOT / "data" / "data_1.json").read_text()
+DATA_2 = (ROOT / "data" / "data_2.json").read_text()
+DATA_FULL = json.loads((ROOT / "data" / "data-full.json").read_text())
 
 QUESTIONS = {
     "mode": {
@@ -69,39 +69,39 @@ def test_knowledge_without_questions():
 
 
 def test_knowledge_files_merge_criteria_in_selection_order():
-    merged = merge_knowledge([("teste1.json", TESTE1), ("teste2.json", TESTE2)])
-    assert merged == QUESTIONS_20
-    assert list(merged["mode"]["criteria"]) == list(QUESTIONS_20["mode"]["criteria"])
+    merged = merge_knowledge([("data_1.json", DATA_1), ("data_2.json", DATA_2)])
+    assert merged == DATA_FULL
+    assert list(merged["mode"]["criteria"]) == list(DATA_FULL["mode"]["criteria"])
 
 
 def test_criteria_only_knowledge_needs_instructions():
     with pytest.raises(InputError) as raised:
-        merge_knowledge([("teste2.json", TESTE2)])
+        merge_knowledge([("data_2.json", DATA_2)])
     assert raised.value.field == "knowledge"
     message = str(raised.value)
-    assert "teste2.json" in message
+    assert "data_2.json" in message
     assert "'mode'" in message
     assert "instructions" in message
 
 
 def test_two_knowledge_files_cannot_both_give_instructions():
     with pytest.raises(InputError) as raised:
-        merge_knowledge([("teste1.json", TESTE1), ("questions_20.json", json.dumps(QUESTIONS_20))])
+        merge_knowledge([("data_1.json", DATA_1), ("data-full.json", json.dumps(DATA_FULL))])
     message = str(raised.value)
-    assert "teste1.json" in message
-    assert "questions_20.json" in message
+    assert "data_1.json" in message
+    assert "data-full.json" in message
     assert "'mode'" in message
 
 
 def test_repeated_answer_names_the_files():
-    overlap = json.loads(TESTE2)
-    overlap["mode"]["criteria"] = {"morse": "again", **overlap["mode"]["criteria"]}
+    overlap = json.loads(DATA_2)
+    overlap["mode"]["criteria"] = {"enemy": "again", **overlap["mode"]["criteria"]}
     with pytest.raises(InputError) as raised:
-        merge_knowledge([("teste1.json", TESTE1), ("teste2.json", json.dumps(overlap))])
+        merge_knowledge([("data_1.json", DATA_1), ("data_2.json", json.dumps(overlap))])
     message = str(raised.value)
-    assert "teste2.json" in message
-    assert "teste1.json" in message
-    assert "'morse'" in message
+    assert "data_2.json" in message
+    assert "data_1.json" in message
+    assert "'enemy'" in message
 
 
 @pytest.mark.parametrize(

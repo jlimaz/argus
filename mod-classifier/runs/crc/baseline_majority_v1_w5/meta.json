@@ -1,0 +1,17 @@
+{
+  "git_commit": "b4a9300403ea0451dc313bdeda1031dece3e1fa1",
+  "manifest_sha256": "fdf44b0992e391e12eaf6602cd5123a1f2f131c580b7739009e569742eecf4b0",
+  "seed": 1,
+  "classes": [
+    "drone_link",
+    "wifi",
+    "bluetooth",
+    "background",
+    "gnss_jammer",
+    "lora",
+    "pulsed_radar",
+    "other_ism"
+  ],
+  "model": "majority",
+  "created": "2026-11-13T02:03:42+00:00"
+}

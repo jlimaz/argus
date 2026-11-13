@@ -1,0 +1,27 @@
+#!/bin/bash
+# Tiny UGE job: report /tmp, CPUs, RAM, nvidia-smi and torch-sees-CUDA on one
+# compute node. Takes a minute or less. Submit from mod-classifier/:
+#
+#   cd argus/mod-classifier && mkdir -p runs/crc_logs
+#   qsub -q gpu -l gpu_card=1 crc/check_node.job      # a GPU node
+#   qsub -q long crc/check_node.job                   # a CPU node
+#   qstat -u $USER                                    # wait until it is gone
+#   cat runs/crc_logs/check_node.o<job id>
+#
+# The queue is chosen on the command line so one file serves both node types.
+# Set MCLS_VENV with `qsub -v MCLS_VENV=/path ...` if the venv is not the default.
+#
+#$ -N check_node
+#$ -pe smp 1
+#$ -j y
+#$ -o runs/crc_logs/
+#$ -cwd
+set -euo pipefail
+
+[ -f crc/check_node.sh ] || { echo "ERROR: submit from mod-classifier/ (crc/check_node.sh not found in $PWD)" >&2; exit 1; }
+# Hard stop after 10 minutes in case a command hangs (timeout is in coreutils).
+if command -v timeout >/dev/null 2>&1; then
+    timeout 600 bash crc/check_node.sh
+else
+    bash crc/check_node.sh
+fi

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Burst Router</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: an instrument panel. Score strip and routing table on top, input on the left,
+   the classified bursts below the spectrogram on the right; one column on a phone. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #14171c; --muted: #5a6270; --line: #dfe3e9;
+  --accent: #1f6fd1; --accent-soft: #e6effb;
+  --good: #11804a; --good-soft: #e3f4ea; --warn: #a15c00; --warn-soft: #fbf0df; --bad: #b3261e; --bad-soft: #fbe7e6;
+  --display: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1216; --panel: #171b21; --ink: #e8ebf0; --muted: #9aa3b2; --line: #2a313b;
+  --accent: #5b9df0; --accent-soft: #1b2a3e;
+  --good: #4cc489; --good-soft: #15291f; --warn: #e3a54a; --warn-soft: #2d2213; --bad: #f07b72; --bad-soft: #321a19;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1216; --panel: #171b21; --ink: #e8ebf0; --muted: #9aa3b2; --line: #2a313b;
+  --accent: #5b9df0; --accent-soft: #1b2a3e;
+  --good: #4cc489; --good-soft: #15291f; --warn: #e3a54a; --warn-soft: #2d2213; --bad: #f07b72; --bad-soft: #321a19;
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: 1.6rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.02rem; }
+.lede { color: var(--muted); max-width: 70ch; margin: 4px 0 0; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.mono, td.num, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.grid-top { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+.grid-main { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid-top, .grid-main { grid-template-columns: 1fr; } }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--line); padding: 6px 8px; white-space: nowrap; }
+td { border-bottom: 1px solid var(--line); padding: 7px 8px; vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+tr.pick td { background: var(--accent-soft); }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 60px; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 0.78rem;
+  font-weight: 500; white-space: nowrap; border: 1px solid var(--line); background: var(--panel); }
+.pill.good { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.pill.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.pill.accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.class-name { font-family: var(--mono); font-weight: 500; }
+.stack { display: grid; gap: 12px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.tabs button { background: none; border: 0; padding: 8px 10px; font: inherit; color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.sample { display: grid; gap: 2px; text-align: left; width: 100%; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
+.sample:hover { border-color: var(--accent); }
+.sample[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.sample .meta { color: var(--muted); font-size: 0.78rem; }
+label { display: grid; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 7px 9px; width: 100%; min-width: 0; }
+.btn { font: inherit; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 7px; padding: 9px 14px; cursor: pointer; }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.spectro { width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; background: #000; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.84rem; }
+.facts span b { font-weight: 500; font-family: var(--mono); }
+.why { color: var(--muted); font-size: 0.78rem; max-width: 34ch; }
+.answers { display: flex; flex-wrap: wrap; gap: 4px; }
+.err { background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 10px 12px; }
+.note { color: var(--muted); font-size: 0.8rem; max-width: 80ch; }
+.status { color: var(--muted); font-size: 0.85rem; }
+@media (prefers-reduced-motion: no-preference) { .bar > span { transition: width 0.4s ease; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Argus · mod-classifier · wave 5 models</div>
+    <h1>Burst Router</h1>
+    <p class="lede">Load an IQ recording. Every burst in it is classified by three trained models; the model that did best
+      on validation data for the burst's frequency band makes the call, and the others are shown beside it.</p>
+  </header>
+
+  <section class="grid-top">
+    <div class="panel stack">
+      <h2>How each strategy scores on unseen test data</h2>
+      <div class="scroll"><table id="scores"><thead><tr><th>Strategy</th><th class="num">Accuracy</th><th class="num">Macro-F1</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="note" id="scores-note"></p>
+    </div>
+    <div class="panel stack">
+      <h2>Which model each band is routed to</h2>
+      <div class="scroll"><table id="routes"><thead><tr><th>Band</th><th>Model</th><th class="num">Val windows</th><th class="num">Recordings</th></tr></thead><tbody></tbody></table></div>
+      <p class="note" id="routes-note"></p>
+    </div>
+  </section>
+
+  <section class="grid-main">
+    <div class="panel">
+      <div class="tabs" role="tablist">
+        <button id="tab-samples" role="tab" aria-selected="true" aria-controls="pane-samples">Test samples</button>
+        <button id="tab-upload" role="tab" aria-selected="false" aria-controls="pane-upload">Upload a recording</button>
+      </div>
+      <div id="pane-samples" class="stack" role="tabpanel">
+        <p class="note">Short slices of real recordings from the test split, so the models never trained on them.</p>
+        <div id="sample-list" class="stack"></div>
+      </div>
+      <form id="pane-upload" class="stack" role="tabpanel" hidden>
+        <label for="f-files">Raw IQ file, or a .sigmf-meta and .sigmf-data pair
+          <input id="f-files" type="file" multiple required></label>
+        <label for="f-format">Sample format (raw files)
+          <select id="f-format">
+            <option value="">From the file ending</option>
+            <option value="cu8">cu8: unsigned 8-bit (RTL-SDR)</option>
+            <option value="ci8">ci8: signed 8-bit (HackRF)</option>
+            <option value="ci16_le">ci16_le: signed 16-bit, little-endian</option>
+            <option value="ci16_be">ci16_be: signed 16-bit, big-endian</option>
+            <option value="cf32_le">cf32_le: 32-bit float</option>
+          </select></label>
+        <div class="row">
+          <label for="f-rate" style="flex:1">Sample rate (Hz)<input id="f-rate" inputmode="decimal" placeholder="e.g. 20e6"></label>
+          <label for="f-centre" style="flex:1">Centre frequency (Hz)<input id="f-centre" inputmode="decimal" placeholder="e.g. 2.44e9"></label>
+        </div>
+        <p class="note">SigMF files carry their rate and centre; raw files need both. At most 40 million samples are read.</p>
+        <button class="btn" id="f-submit" type="submit">Classify recording</button>
+      </form>
+    </div>
+
+    <div class="stack">
+      <div class="panel stack" id="result">
+        <div class="row" style="justify-content:space-between">
+          <h2 id="r-title">Result</h2>
+          <span class="status" id="r-status">Loading the models…</span>
+        </div>
+        <div class="facts" id="r-facts"></div>
+        <img class="spectro" id="r-spectro" alt="Spectrogram of the recording with classified bursts shaded and numbered" hidden>
+        <div id="r-error" class="err" hidden></div>
+        <div class="scroll"><table id="bursts">
+          <thead><tr><th>#</th><th class="num">Time (s)</th><th class="num">Centre (MHz)</th><th class="num">Width (kHz)</th>
+            <th>Band → model</th><th>Class</th><th>Confidence</th><th>All models</th></tr></thead>
+          <tbody></tbody></table></div>
+      </div>
+      <p class="note" id="limits">Limits: trained on lab recordings only, never tested on the team's own radios. pulsed_radar
+        has only simulated training data and no test data. other_ism comes from rtl_433_tests, which states no licence.
+        When the models disagree, check the burst by hand.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (x, d = 1) => Number(x).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (x) => `${(100 * x).toFixed(1)}%`;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `${res.status} ${res.statusText}`);
+  return body;
+}
+
+function renderSummary(s) {
+  const rows = s.strategies.map((t) => {
+    const pick = t.name === "route by band";
+    const ceiling = t.name.startsWith("oracle");
+    const tag = pick ? '<span class="pill accent">used here</span>' : ceiling ? '<span class="pill">ceiling only</span>' : "";
+    const name = t.name.replace("cnn2d_v1_w5", "2D CNN").replace("baseline_knn_v1_w5", "kNN").replace("baseline_lightgbm_v1_w5", "LightGBM");
+    return `<tr class="${pick ? "pick" : ""}"><td>${esc(name)}</td><td class="num">${pct(t.accuracy)}</td><td class="num">${t.macro_f1.toFixed(3)}</td><td>${tag}</td></tr>`;
+  });
+  $("scores").tBodies[0].innerHTML = rows.join("");
+  $("scores-note").textContent = "Test: 34,488 windows from recordings no model trained on, 7 classes. The oracle always picks a model that happens to be right; no real strategy can, since the true class is unknown when classifying.";
+  $("routes").tBodies[0].innerHTML = s.routes.map((r) =>
+    `<tr><td class="mono">${esc(r.band)}</td><td>${esc(r.model)}</td><td class="num">${r.val_windows.toLocaleString()}</td><td class="num">${r.val_recordings}</td></tr>`).join("");
+  $("routes-note").textContent = `Chosen on validation data only. A band with too little validation data, or none, goes to the overall best model (${s.fallback}). Each band here comes mostly from one dataset, so a route may reflect that dataset as much as the signal type.`;
+}
+
+function renderSamples(samples) {
+  $("sample-list").innerHTML = samples.map((s, i) => `
+    <button class="sample" data-i="${i}" aria-pressed="false">
+      <span><span class="class-name">${esc(s.true_class)}</span> · ${esc(s.file.replace(/\.(cs16|cs8|cu8|sigmf-data)$/, ""))}</span>
+      <span class="meta">${fmt(s.center_frequency_hz / 1e6, 2)} MHz · ${fmt(s.sample_rate_hz / 1e6, 2)} MS/s · ${esc(s.source.split(",")[0])}</span>
+    </button>`).join("");
+  document.querySelectorAll(".sample").forEach((b) => b.addEventListener("click", () => runSample(samples[b.dataset.i], b)));
+}
+
+function confidenceCell(b) {
+  return `<div class="row" style="gap:6px;flex-wrap:nowrap"><div class="bar" style="flex:1"><span style="width:${(100 * b.confidence).toFixed(0)}%"></span></div><span class="num">${pct(b.confidence)}</span></div>`;
+}
+
+function classPill(name, expected) {
+  if (name === "unknown") return '<span class="pill warn">unknown</span>';
+  if (!expected) return `<span class="pill"><span class="class-name">${esc(name)}</span></span>`;
+  return `<span class="pill ${name === expected ? "good" : "bad"}"><span class="class-name">${esc(name)}</span>${name === expected ? " ✓" : " ✗"}</span>`;
+}
+
+function renderResult(r, label) {
+  $("r-error").hidden = true;
+  $("r-title").textContent = label || r.source;
+  const expected = r.expected ? r.expected.true_class : null;
+  const facts = [
+    ["file", r.source], ["format", r.datatype], ["rate", `${fmt(r.sample_rate_hz / 1e6, 3)} MS/s`],
+    ["centre", `${fmt(r.center_frequency_hz / 1e6, 3)} MHz`], ["length", `${fmt(r.duration_s * 1000, 1)} ms`],
+    ["bursts", `${r.bursts_classified} of ${r.bursts_found}`]];
+  if (expected) facts.push(["true class", expected]);
+  $("r-facts").innerHTML = facts.map(([k, v]) => `<span>${k} <b>${esc(v)}</b></span>`).join("") + (r.cut ? ' <span class="pill warn">file cut to its first 40 M samples</span>' : "");
+  $("r-spectro").src = `data:image/png;base64,${r.spectrogram_png}`;
+  $("r-spectro").hidden = false;
+  const rows = r.bursts.map((b) => {
+    const answers = Object.values(b.models).map((m) =>
+      `<span class="pill ${m.class === b.class ? "" : "warn"}" title="${esc(m.label)}: ${pct(m.confidence)}">${esc(m.label)}: <span class="class-name">${esc(m.class)}</span></span>`).join("");
+    const agree = b.agreement === "all agree" ? '<span class="pill good">all agree</span>' : '<span class="pill warn">disagree: check by hand</span>';
+    const flags = b.always_on ? '<span class="pill">always-on signal</span>' : "";
+    return `<tr>
+      <td class="num">${b.index + 1}</td>
+      <td class="num">${fmt(b.start_s, 4)}–${fmt(b.end_s, 4)}</td>
+      <td class="num">${fmt(b.center_frequency_hz / 1e6, 3)}</td>
+      <td class="num">${fmt(b.bandwidth_hz / 1e3, 0)}</td>
+      <td><div><span class="mono">${esc(b.band)}</span> → <b>${esc(b.chosen_label)}</b></div><div class="why">${esc(b.why)}</div></td>
+      <td><div class="stack" style="gap:4px">${classPill(b.class, expected)}${flags}</div></td>
+      <td style="min-width:140px">${confidenceCell(b)}<div class="why">${b.windows} windows</div></td>
+      <td><div class="answers">${answers}</div><div style="margin-top:4px">${agree}</div></td></tr>`;
+  });
+  $("bursts").tBodies[0].innerHTML = rows.join("") ||
+    '<tr><td colspan="8" class="status">No bursts rose above the noise floor in this recording.</td></tr>';
+  $("r-status").textContent = `${r.bursts_classified} burst${r.bursts_classified === 1 ? "" : "s"} classified`;
+}
+
+function showError(e) {
+  $("r-error").textContent = e.message;
+  $("r-error").hidden = false;
+  $("r-status").textContent = "Not classified";
+}
+
+async function runSample(s, button) {
+  document.querySelectorAll(".sample").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+  $("r-status").textContent = "Classifying…";
+  try {
+    const body = new FormData(); body.append("name", s.file);
+    renderResult(await api("/api/classify_sample", { method: "POST", body }), `${s.true_class} sample`);
+  } catch (e) { showError(e); }
+}
+
+$("pane-upload").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const body = new FormData();
+  for (const f of $("f-files").files) body.append("files", f);
+  body.append("sample_rate_hz", $("f-rate").value);
+  body.append("center_frequency_hz", $("f-centre").value);
+  body.append("format", $("f-format").value);
+  $("f-submit").disabled = true; $("r-status").textContent = "Classifying…";
+  try { renderResult(await api("/api/classify", { method: "POST", body })); }
+  catch (e) { showError(e); }
+  finally { $("f-submit").disabled = false; }
+});
+
+for (const [tab, pane, other, otherPane] of [["tab-samples", "pane-samples", "tab-upload", "pane-upload"], ["tab-upload", "pane-upload", "tab-samples", "pane-samples"]]) {
+  $(tab).addEventListener("click", () => {
+    $(tab).setAttribute("aria-selected", "true"); $(other).setAttribute("aria-selected", "false");
+    $(pane).hidden = false; $(otherPane).hidden = true;
+  });
+}
+
+(async () => {
+  try {
+    renderSummary(await api("/api/summary"));
+    const samples = await api("/api/samples");
+    renderSamples(samples);
+    $("r-status").textContent = "Ready";
+    const first = document.querySelector(".sample");
+    if (first) runSample(samples[0], first);  // open on a worked example
+  } catch (e) { showError(e); }
+})();
+</script>
+</body>
+</html>

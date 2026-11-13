@@ -1,0 +1,19 @@
+{
+  "classes": [
+    "drone_link",
+    "wifi",
+    "bluetooth",
+    "background",
+    "gnss_jammer",
+    "lora",
+    "pulsed_radar",
+    "other_ism"
+  ],
+  "model": "cnn2d",
+  "epoch": 17,
+  "val_macro_f1": 0.8679871339662758,
+  "check": "256 real test windows from manifest_w5.jsonl",
+  "max_abs_logit_diff": 3.814697265625e-06,
+  "argmax_agreement": 1.0,
+  "opset": 17
+}

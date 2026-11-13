@@ -1,11 +1,13 @@
 """Shared pieces for turning an open source into training observations."""
 
 import json
+import os
 import random
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / "data" / "raw"
+# Raw downloads live under data/raw unless ARGUS_RAW points elsewhere (a cluster's /tmp, say).
+RAW = Path(os.environ.get("ARGUS_RAW", ROOT / "data" / "raw"))
 TRAIN = ROOT / "data" / "train"
 
 # How an observation differs from the catalogue entry: bandwidth is the listed value

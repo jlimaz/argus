@@ -1,0 +1,95 @@
+#!/bin/bash
+# Prepare rtl_433_tests (other_ism) in parallel. The catalog cannot fetch it
+# (access = manual), hence its own job. Submit from mod-classifier/ as two steps:
+#
+#   c=$(qsub -terse -q long crc/prepare_rtl433.job clone)
+#   qsub -q long -hold_jid ${c%%.*} -t 1-40 crc/prepare_rtl433.job chunk 40
+#
+# "clone": shallow-clones the repository once into $MCLS_RTL433_CLONE (shared
+#   home storage, about 2.9 GB), lists its device folders, and writes
+#   runs/file_lists/files_rtl_433.txt with one key per chunk (rtl_433_c01 ...).
+# "chunk N": array task k of N copies the .cu8 files of every N-th device
+#   (devices k, k+N, ...) to node-local /tmp, runs mcls.preprocess on them and
+#   keeps the windows in $MCLS_OUT/rtl_433_cKK/ with a DONE marker (the layout
+#   scripts/merge_shards.py expects). A task whose DONE exists does nothing.
+# Why chunks: one file takes about 16 s (a 250 kS/s recording is upsampled 80x
+# to 20 MS/s), so 3,724 files in one job would take about 16 hours.
+# Delete the clone afterwards: rm -rf "$MCLS_RTL433_CLONE".
+#
+# Settings: MCLS_OUT (default $HOME/mcls_data/prepared/rtl_433),
+# MCLS_RTL433_CLONE (default $HOME/mcls_data/raw/rtl_433_tests),
+# MCLS_MAX_WINDOWS_PER_RECORDING (default 20 per file, so no device swamps the class).
+#
+#$ -N mcls_rtl433
+#$ -pe smp 1
+#$ -j y
+#$ -o runs/crc_logs/
+#$ -cwd
+set -euo pipefail
+
+[ -f crc/common.sh ] || { echo "ERROR: submit from mod-classifier/" >&2; exit 1; }
+# shellcheck source=common.sh
+source crc/common.sh
+
+URL="https://github.com/merbanan/rtl_433_tests.git"
+OUT="${MCLS_OUT:-$HOME/mcls_data/prepared/rtl_433}"
+CLONE="${MCLS_RTL433_CLONE:-$HOME/mcls_data/raw/rtl_433_tests}"
+CAP="${MCLS_MAX_WINDOWS_PER_RECORDING:-20}"
+DEVICES="runs/file_lists/rtl_433_devices.txt"
+STEP="${1:?clone or chunk}"
+
+echo "job ${JOB_ID:-local} task ${SGE_TASK_ID:-none} on $(hostname) at $(date): $STEP"
+
+if [ "$STEP" = clone ]; then
+    CHUNKS="${2:-40}"
+    mkdir -p "$(dirname "$CLONE")" runs/file_lists
+    if [ ! -d "$CLONE/.git" ]; then
+        git clone --depth 1 --quiet "$URL" "$CLONE"
+    fi
+    git -C "$CLONE" log -1 --format='commit %H %cd'
+    find "$CLONE/tests" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort > "$DEVICES"
+    echo "$(wc -l < "$DEVICES") device folders"
+    for k in $(seq 1 "$CHUNKS"); do printf 'rtl_433_c%02d\n' "$k"; done > runs/file_lists/files_rtl_433.txt
+    exit 0
+fi
+
+[ "$STEP" = chunk ] || { echo "ERROR: step must be clone or chunk, got '$STEP'" >&2; exit 1; }
+CHUNKS="${2:?number of chunks}"
+TASK="${SGE_TASK_ID:?submit as an array job: -t 1-$CHUNKS}"
+KEY="$(printf 'rtl_433_c%02d' "$TASK")"
+if [ -f "$OUT/$KEY/DONE" ]; then
+    echo "already done: $OUT/$KEY"
+    exit 0
+fi
+[ -f "$DEVICES" ] || { echo "ERROR: $DEVICES missing: run the clone step first" >&2; exit 1; }
+
+NODE_TMP="${MCLS_NODE_TMP:-/tmp/$USER}"
+WORK="$NODE_TMP/mcls_rtl433.${JOB_ID:-local}.$TASK"
+mkdir -p "$WORK/raw/tests"
+trap 'rm -rf "$WORK"' EXIT
+
+# Devices k, k+N, k+2N, ... (spreads big and small device folders over the tasks).
+mine="$(awk -v k="$TASK" -v n="$CHUNKS" '(NR - k) % n == 0' "$DEVICES")"
+echo "$(echo "$mine" | grep -c . || true) devices"
+while IFS= read -r device; do
+    [ -n "$device" ] || continue
+    (cd "$CLONE/tests" && find "$device" -name '*.cu8' -print0 | cpio -0 -pdm --quiet "$WORK/raw/tests")
+done <<< "$mine"
+echo "$(find "$WORK/raw" -name '*.cu8' | wc -l) files, $(du -sh "$WORK/raw" | cut -f1)"
+
+mcls_load_python
+mcls_activate_venv
+echo "[$(date +%T)] preprocess"
+python -m mcls.preprocess --dataset rtl_433 --raw "$WORK/raw" --out "$WORK/out" \
+    --max-windows-per-recording "$CAP" > "$WORK/preprocess.log" 2>&1 ||
+    { tail -40 "$WORK/preprocess.log"; exit 1; }
+tail -3 "$WORK/preprocess.log"
+
+mkdir -p "$OUT"
+STAGE="$OUT/.$KEY.partial.${JOB_ID:-local}"
+rm -rf "$STAGE"
+cp -r "$WORK/out" "$STAGE"
+touch "$STAGE/DONE"
+rm -rf "${OUT:?}/$KEY"
+mv "$STAGE" "$OUT/$KEY"
+echo "[$(date +%T)] done: $OUT/$KEY ($(du -sh "$OUT/$KEY" | cut -f1))"

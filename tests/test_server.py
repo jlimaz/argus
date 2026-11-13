@@ -23,11 +23,13 @@ ROWS = [
 
 
 def fake_run(questions, observations):
+    # Row 0 gets the first answer (Morse), every other row gets "other".
+    first = next(iter(questions["mode"]["criteria"]))
     return [
         {
             "id": observation["id"],
             "state": f"state of {observation['id']}.",
-            "answers": {"mode": ("morse" if observation["id"] == 0 else "other", 0.9)},
+            "answers": {"mode": (first if observation["id"] == 0 else "other", 0.9)},
         }
         for observation in observations
     ]
@@ -80,13 +82,13 @@ def test_classify_returns_a_summary_and_activates_the_context(client):
 
 
 def test_classify_accepts_several_files(client):
-    questions = json.loads((ROOT / "data" / "questions_20.json").read_text())
+    questions = json.loads((ROOT / "data" / "data-full.json").read_text())
     response = client.post(
         "/classify",
         json={
             "knowledge": [
-                {"name": "teste1.json", "text": (ROOT / "data" / "teste1.json").read_text()},
-                {"name": "teste2.json", "text": (ROOT / "data" / "teste2.json").read_text()},
+                {"name": "data_1.json", "text": (ROOT / "data" / "data_1.json").read_text()},
+                {"name": "data_2.json", "text": (ROOT / "data" / "data_2.json").read_text()},
             ],
             "data": [
                 {"name": "a.json", "text": json.dumps([ROWS[0]])},
@@ -96,11 +98,11 @@ def test_classify_accepts_several_files(client):
     )
     assert response.status_code == 200
     summary = response.json()["summary"]
-    assert summary["knowledge_name"] == "teste1.json, teste2.json"
+    assert summary["knowledge_name"] == "data_1.json, data_2.json"
     assert summary["data_name"] == "a.json, b.json"
     assert summary["observations"] == 2
     assert summary["questions"][0]["counts"] == {
-        option: 1 if option in ("morse", "other") else 0
+        option: 1 if option in ("enemy", "other") else 0
         for option in questions["mode"]["criteria"]
     }
 
@@ -108,7 +110,7 @@ def test_classify_accepts_several_files(client):
 def test_criteria_only_knowledge_is_a_400(client):
     response = client.post(
         "/classify",
-        json=body(knowledge=(ROOT / "data" / "teste2.json").read_text()),
+        json=body(knowledge=(ROOT / "data" / "data_2.json").read_text()),
     )
     assert response.status_code == 400
     assert response.json()["field"] == "knowledge"

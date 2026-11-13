@@ -1,0 +1,53 @@
+#!/bin/bash
+# Merge prepared datasets into the shards folder and build one manifest. Usually
+# submitted by crc/submit_wave.sh, held until the prepare jobs end. By hand:
+#
+#   qsub -q long -hold_jid <prepare job ids> crc/build_manifest.job data/manifest_w2.jsonl nist_wifi_bt [v1]
+#
+# Arguments: MANIFEST (output path), DATASETS (comma-separated datasets to merge;
+# datasets merged before stay in ~/mcls_data/shards and in the manifest), and
+# optionally CLASSES (class set kept in the manifest: v1, v2, a named subset such
+# as v2a, or all; default v1).
+# A dataset with missing files is merged as far as it goes; the log names them.
+# A DATASETS entry is a folder under ~/mcls_data/prepared/ with a file list
+# runs/file_lists/files_<entry>.txt (e.g. dronerf_v2, a re-prepared DroneRF).
+# Settings: MCLS_SHARDS (shards dir to merge into and build from; default
+# ~/mcls_data/shards). A new dir leaves manifests built from the old one intact.
+# MCLS_SKIP_MERGE=1 builds from the shards dir as it is (the merge of rtl_433's
+# 11,000 small files took 21 min on Nov 12). MCLS_NO_HASH_AUDIT=1 skips hashing
+# every window's samples: over network storage it read about 0.5 MB/s for
+# ~380,000 windows (hours). The recording and window-id leakage checks still run.
+#
+#$ -N mcls_manifest
+#$ -pe smp 2
+#$ -j y
+#$ -o runs/crc_logs/
+#$ -cwd
+set -euo pipefail
+
+[ -f crc/common.sh ] || { echo "ERROR: submit from mod-classifier/" >&2; exit 1; }
+# shellcheck source=common.sh
+source crc/common.sh
+
+MANIFEST="${1:?manifest path}"
+DATASETS="${2:?comma-separated datasets}"
+CLASSES="${3:-v1}"
+SHARDS="${MCLS_SHARDS:-$HOME/mcls_data/shards}"
+
+echo "job ${JOB_ID:-local} on $(hostname) at $(date): $MANIFEST from $DATASETS, classes $CLASSES"
+mcls_load_python
+mcls_activate_venv
+
+IFS=',' read -r -a SETS <<< "$DATASETS"
+[ "${MCLS_SKIP_MERGE:-0}" = 1 ] && { echo "MCLS_SKIP_MERGE=1: building from $SHARDS as it is"; SETS=(); }
+for d in "${SETS[@]}"; do
+    python scripts/merge_shards.py --prepared "$HOME/mcls_data/prepared/$d" \
+        --file-list "runs/file_lists/files_$d.txt" --dest "$SHARDS" ||
+        echo "(merge of $d reported missing files; continuing with what is there)"
+done
+TMP="$MANIFEST.partial"
+AUDIT=()
+[ "${MCLS_NO_HASH_AUDIT:-0}" = 1 ] && AUDIT=(--no-hash-audit)
+python -m mcls.dataset.build_manifest --shards "$SHARDS" --out "$TMP" --seed 1 --classes "$CLASSES" "${AUDIT[@]}"
+mv "$TMP" "$MANIFEST"   # training jobs held on this one only ever see a whole file
+echo "[$(date +%T)] wrote $MANIFEST"

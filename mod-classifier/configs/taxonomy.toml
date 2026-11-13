@@ -1,0 +1,517 @@
+# Class set and the label of every dataset's files.
+#
+# Classes are physical signal families: what IQ can show. Whether a signal is a
+# drone is decided later by the Judge, from the class, the burst pattern and the
+# site profile (PLAN.md section 2). A drone whose link is physically Wi-Fi or
+# Bluetooth gets that class plus an `emitter_id` (the drone model); proprietary
+# links (DJI Lightbridge, OcuSync, O3) stay `drone_link`.
+#
+# Owner: engineer 1 (taxonomy and licences). Change through the orchestrator.
+# Licence details and source links per dataset: LICENCES.md. Every link
+# decision below cites the page it was read from (read Nov 11-12, 2026).
+
+[classes]
+v1 = ["drone_link", "wifi", "bluetooth", "background"]
+v2 = ["pulsed_radar", "gnss_jammer", "adsb", "lora", "other_ism"]
+# Named subsets (each a full class list, drawn from v1 + v2). A config's
+# data.classes and build_manifest --classes accept these names too.
+# v2a: v1 plus the v2 classes whose data can be loaded today (Nov 12): GATEMAN and
+# the triangular set for gnss_jammer, LoRaIQ for lora. pulsed_radar, adsb and
+# other_ism wait for their loaders.
+v2a = ["drone_link", "wifi", "bluetooth", "background", "gnss_jammer", "lora"]
+# v2b: v2a plus pulsed_radar (Drexel CBRS through a USRP; simulated waveforms, so
+# trained on but never in a reported test). adsb and other_ism still need data.
+v2b = ["drone_link", "wifi", "bluetooth", "background", "gnss_jammer", "lora", "pulsed_radar"]
+# v2c: v2b plus other_ism (rtl_433_tests; no licence stated, used by Odon's decision).
+# Every v2 class but adsb, which waits for an IEEE DataPort login.
+v2c = ["drone_link", "wifi", "bluetooth", "background", "gnss_jammer", "lora", "pulsed_radar", "other_ism"]
+
+# Each dataset: its licence, whether it is real, its default label, and file
+# overrides. `match` is a substring of the file name (or of the path a loader
+# passes); the FIRST match wins, so a longer name goes before a shorter one it
+# contains. Optional per override: `emitter_id`, `note`, and `exclude = true`
+# (no class in the current set; `note` says why). A dataset may set
+# `default_exclude = true` (with `note`) so unmatched files are excluded.
+# Strength: "strong" = the label holds for every window, "weak" = per-file
+# label that may not hold for every window, or a link that is not fully
+# confirmed (the note says which).
+
+# ---------------------------------------------------------------------------
+# Tampere: anechoic chamber, drone and controller only, 2.44 and 5.8 GHz.
+# https://zenodo.org/records/4264467 (file list: https://zenodo.org/api/records/4264467)
+# Every file has an override so every recording carries an emitter_id; the
+# emitter ids equal what mcls/sources/tampere.py parses from the name.
+# ---------------------------------------------------------------------------
+[datasets.tampere]
+license = "CC BY 4.0"
+is_real = true
+url = "https://zenodo.org/records/4264467"
+default_label = "drone_link"
+default_strength = "strong"
+
+# DJI Mavic Mini (2019): "Video Transmission System: Enhanced Wi-Fi"; remote
+# controller MR1SD25 2.400-2.4835 / 5.725-5.850 GHz.
+# https://www.dji.com/support/product/mavic-mini (also /ph/support/product/mavic-mini)
+# Weak: the manufacturer names the link Wi-Fi, but no filing opened confirms
+# 802.11 framing (the FCC grant for the 5.8 GHz controller lists 5/20/40 MHz
+# modes, https://fccid.io/SS3-MR1SS51905, but names no standard).
+[[datasets.tampere.overrides]]
+match = "DJI_mavic_mini"
+label = "wifi"
+strength = "weak"
+emitter_id = "DJI_mavic_mini"
+note = "DJI 'Enhanced Wi-Fi' link; 802.11 conformance not confirmed by a filing"
+
+# DJI Mavic Pro: "The Mavic remote controller uses DJI's OcuSync transmission
+# technology", RC 2.4-2.483 GHz. Its phone-only Wi-Fi mode (80 m) is not the
+# controller link Tampere recorded. https://www.dji.com/mavic/specs
+[[datasets.tampere.overrides]]
+match = "DJI_mavic_pro"
+label = "drone_link"
+strength = "strong"
+emitter_id = "DJI_mavic_pro"
+note = "OcuSync"
+
+# DJI Phantom 4 Pro (+): "powered by an enhanced version of DJI Lightbridge",
+# 2.4 and 5.8 GHz; Pro+ differs only by its controller's screen.
+# https://www.dji.com/support/product/phantom-4-pro
+# Must stay above "DJI_phantom_4_", which is a substring of this name.
+[[datasets.tampere.overrides]]
+match = "DJI_phantom_4_pro_plus"
+label = "drone_link"
+strength = "strong"
+emitter_id = "DJI_phantom_4_pro_plus"
+note = "Lightbridge (enhanced)"
+
+# DJI Phantom 4: "uses DJI Lightbridge for video downlink and remote controller
+# communication". https://www.dji.com/support/product/phantom-4
+[[datasets.tampere.overrides]]
+match = "DJI_phantom_4_"
+label = "drone_link"
+strength = "strong"
+emitter_id = "DJI_phantom_4"
+note = "Lightbridge"
+
+# DJI Matrice 100: RC "2.400~2.483 GHz (Lightbridge)".
+# https://www.dji.com/support/product/matrice100
+[[datasets.tampere.overrides]]
+match = "DJI_matrice_100"
+label = "drone_link"
+strength = "strong"
+emitter_id = "DJI_matrice_100"
+note = "Lightbridge at 2.4 GHz"
+
+# DJI Matrice 210: specs name the "Cendence" controller, RC 2.400-2.483 and
+# 5.725-5.825 GHz; no Wi-Fi link listed.
+# https://www.dji.com/support/product/matrice-200-series
+[[datasets.tampere.overrides]]
+match = "DJI_matrice_210"
+label = "drone_link"
+strength = "strong"
+emitter_id = "DJI_matrice_210"
+note = "DJI proprietary link (transmission system not named on the page)"
+
+# DJI Inspire 2: dual-band 2.400-2.483 / 5.725-5.850 GHz, "dual-frequency,
+# dual-path"; the page names no transmission system and no Wi-Fi link.
+# https://www.dji.com/support/product/inspire-2
+[[datasets.tampere.overrides]]
+match = "DJI_inspire_2"
+label = "drone_link"
+strength = "strong"
+emitter_id = "DJI_inspire_2"
+note = "DJI proprietary link (transmission system not named on the page)"
+
+# Parrot Disco: Parrot's own SDK lists Disco (product "Evinrude", 0x090e) under
+# the "NSNet Service" (IP over Wi-Fi), not the "BLE Service".
+# https://github.com/Parrot-Developers/libARDiscovery/blob/master/Sources/ARDISCOVERY_Discovery.c
+# The Disco FPV user guide lists "AC Wi-Fi", "2 dual band antenna", "2.4 and 5 GHz"
+# (mirror: https://www.manualsdir.com/manuals/848857/parrot-disco-fpv.html?page=27).
+[[datasets.tampere.overrides]]
+match = "Parrot_disco"
+label = "wifi"
+strength = "strong"
+emitter_id = "Parrot_disco"
+note = "Wi-Fi (802.11ac, 2.4/5 GHz) with Skycontroller 2"
+
+# Parrot Mambo: Parrot's SDK lists Mambo ("Delos3", 0x090b) under the "BLE
+# Service" (link above). Parrot's FreeFlight Mini app page: minidrones connect
+# "via Bluetooth Low Energy or Wi-Fi"; "If you're using Mambo FPV, activate wifi".
+# https://apps.apple.com/us/app/freeflight-mini/id1137022728
+# Tampere recorded control and video separately (Zenodo record), so the control
+# file is taken as the BLE link and the video file as the FPV camera's Wi-Fi.
+# Weak: which controller and camera Tampere used is not stated.
+[[datasets.tampere.overrides]]
+match = "Parrot_mambo_control"
+label = "bluetooth"
+strength = "weak"
+emitter_id = "Parrot_mambo"
+note = "BLE control link per Parrot SDK; controller used by Tampere unverified"
+
+[[datasets.tampere.overrides]]
+match = "Parrot_mambo_video"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_mambo"
+note = "Wi-Fi video of the Mambo FPV camera, inferred from Parrot's app page"
+
+# Yuneec Typhoon H: no manufacturer spec page or filing could be opened. Retail
+# and forum pages say 2.4 GHz control and a 5.8 GHz video link that may be
+# Wi-Fi; unconfirmed, so it stays drone_link and is listed as open.
+[[datasets.tampere.overrides]]
+match = "Yuneec_typhoon_h"
+label = "drone_link"
+strength = "weak"
+emitter_id = "Yuneec_typhoon_h"
+note = "OPEN: link not confirmed from a manufacturer source; 5.7 GHz video may be Wi-Fi"
+
+# ---------------------------------------------------------------------------
+# DroneRF: lab recordings of the 2.4 GHz band, real samples at 40 MS/s.
+# https://data.mendeley.com/datasets/f4c2b4n755/1
+# Data paper (open access): https://europepmc.org/article/PMC/PMC6727013
+# File names start with the 5-digit BUI: digit 1 drone present, digits 2-3 the
+# drone (00 Bebop, 01 AR, 10 Phantom), digits 4-5 the flight mode; "00000" is no
+# drone. A 5-digit code occurs only at the start of a name ("10111H_3.csv"), so
+# full codes are matched; prefixes like "101" would also match "11010".
+# The paper: "Bebop and Phantom use WiFi 2.4 GHz and 5 GHz"; drones are flown
+# from phone apps (FreeFlight Pro, AR.FreeFlight, DJI Go). Its references name
+# the models: Parrot Bebop, Parrot AR.Drone 2.0 (Elite), DJI Phantom 3 Standard.
+# Weak throughout: a lab with ambient 2.4 GHz traffic, labels per file.
+# ---------------------------------------------------------------------------
+[datasets.dronerf]
+license = "CC BY 4.0"
+is_real = true
+url = "https://data.mendeley.com/datasets/f4c2b4n755/1"
+default_exclude = true
+note = "file name does not start with a known DroneRF BUI code"
+
+[[datasets.dronerf.overrides]]
+match = "00000"
+label = "background"
+strength = "weak"
+note = "no-drone recording (lab ambient; other 2.4 GHz traffic not ruled out)"
+
+# Parrot Bebop: Wi-Fi per the DroneRF paper; Parrot's SDK lists "Bebop Drone"
+# (0x0901) under the "NSNet Service" (IP over Wi-Fi).
+# https://github.com/Parrot-Developers/libARDiscovery/blob/master/Sources/ARDISCOVERY_Discovery.c
+[[datasets.dronerf.overrides]]
+match = "10000"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_Bebop"
+
+[[datasets.dronerf.overrides]]
+match = "10001"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_Bebop"
+
+[[datasets.dronerf.overrides]]
+match = "10010"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_Bebop"
+
+[[datasets.dronerf.overrides]]
+match = "10011"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_Bebop"
+
+# Parrot AR.Drone 2.0: FCC ID RKXMYKONOS2, "AR DRONE 2.0 WITH WIFI MODULE",
+# 2412-2472 MHz, class DTS. https://fccid.io/RKXMYKONOS2
+[[datasets.dronerf.overrides]]
+match = "10100"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_AR_Drone_2"
+
+[[datasets.dronerf.overrides]]
+match = "10101"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_AR_Drone_2"
+
+[[datasets.dronerf.overrides]]
+match = "10110"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_AR_Drone_2"
+
+[[datasets.dronerf.overrides]]
+match = "10111"
+label = "wifi"
+strength = "weak"
+emitter_id = "Parrot_AR_Drone_2"
+
+# DJI Phantom 3 Standard: "Live View Working Frequency 2.4 GHz ISM"; FAQ "How
+# do I connect to the Wi-Fi video downlink? ... select PHANTOM3_XXXXXX from
+# the Wi-Fi network list"; the remote controller is 5.725-5.825 GHz, outside
+# DroneRF's 2.4 GHz band. https://www.dji.com/phantom-3-standard
+# The paper's example "BUI = 11010, Phantom drone" shows more than one Phantom
+# mode code, so all four are listed.
+[[datasets.dronerf.overrides]]
+match = "11000"
+label = "wifi"
+strength = "weak"
+emitter_id = "DJI_Phantom_3_Standard"
+note = "2.4 GHz Wi-Fi video downlink; 5.8 GHz control link not in the recording"
+
+[[datasets.dronerf.overrides]]
+match = "11001"
+label = "wifi"
+strength = "weak"
+emitter_id = "DJI_Phantom_3_Standard"
+note = "2.4 GHz Wi-Fi video downlink; 5.8 GHz control link not in the recording"
+
+[[datasets.dronerf.overrides]]
+match = "11010"
+label = "wifi"
+strength = "weak"
+emitter_id = "DJI_Phantom_3_Standard"
+note = "2.4 GHz Wi-Fi video downlink; 5.8 GHz control link not in the recording"
+
+[[datasets.dronerf.overrides]]
+match = "11011"
+label = "wifi"
+strength = "weak"
+emitter_id = "DJI_Phantom_3_Standard"
+note = "2.4 GHz Wi-Fi video downlink; 5.8 GHz control link not in the recording"
+
+# ---------------------------------------------------------------------------
+# NIST Wi-Fi and Bluetooth I/Q (five HDF5 files).
+# https://catalog.data.gov/dataset/wi-fi-and-bluetooth-i-q-recordings-in-the-2-4-ghz-and-5-ghz-bands-with-low-cost-software-d
+# README: https://data.nist.gov/od/ds/ark:/88434/mds2-2731/README.txt
+# Labels are per file (environment and band), so all weak.
+# ---------------------------------------------------------------------------
+[datasets.nist_wifi_bt]
+license = "NIST open licence (https://www.nist.gov/open/license)"
+is_real = true
+url = "https://data.nist.gov/od/id/mds2-2731"
+default_label = "wifi"
+default_strength = "weak"
+
+# README: "2_4ghz_bluetooth.h5 ... co-channel Wi-Fi & Bluetooth captures".
+[[datasets.nist_wifi_bt.overrides]]
+match = "bluetooth"
+label = "bluetooth"
+strength = "weak"
+note = "co-channel Wi-Fi and Bluetooth; windows may hold either"
+
+# ---------------------------------------------------------------------------
+# Multi-environment multi-band occupancy dataset (IEEE DataPort, SigMF).
+# https://ieee-dataport.org/documents/multi-environment-real-world-multi-band-rf-dataset-spectrum-sensing-and-occupancy
+# Measured occupancy 0.0 % to 55.6 % by band and place. Labelled `background`
+# weakly: only windows the energy detector finds idle are background; the
+# occupied ones have no known class and must be dropped by the front end.
+# ---------------------------------------------------------------------------
+[datasets.occupancy]
+license = "CC BY (version not stated on the page)"
+is_real = true
+url = "https://ieee-dataport.org/documents/multi-environment-real-world-multi-band-rf-dataset-spectrum-sensing-and-occupancy"
+default_label = "background"
+default_strength = "weak"
+
+# ---------------------------------------------------------------------------
+# DroneDetect: 7 drones at 2.4375 GHz centre, 28 MHz, with no, Bluetooth, Wi-Fi
+# or both interference. Name pattern from the page: "MIN + 11 + 00 + 00 =
+# MIN_1100_00.dat" (Mavic Mini, BT and Wi-Fi interference, switched on).
+# https://ieee-dataport.org/open-access/dronedetect-dataset-radio-frequency-dataset-unmanned-aerial-system-uas-signals-machine
+# Only the Mavic Mini code ("MIN") is published; the other six codes are not on
+# the page, so their files are excluded until the archive listing is read.
+# Weak throughout: interference files mix drone, Wi-Fi and Bluetooth bursts.
+# Links of the other drones, for when the codes are known:
+#   Mavic Pro: OcuSync (https://www.dji.com/mavic/specs) -> drone_link
+#   Mavic Pro 2 (Mavic 2): "Video Transmission System OcuSync 2.0"
+#     (https://www.dji.com/mavic-2/info) -> drone_link
+#   "Mavic 2 Air S": model name ambiguous; if DJI Air 2S, "Video Transmission
+#     System DJI O3", "no Wi-Fi connection mode" (https://www.dji.com/support/product/air-2s) -> drone_link
+#   Inspire 2, Phantom 4: as Tampere above -> drone_link
+#   Parrot Disco: as Tampere above -> wifi
+# ---------------------------------------------------------------------------
+[datasets.dronedetect]
+license = "CC BY (version not stated on the page)"
+is_real = true
+url = "https://ieee-dataport.org/open-access/dronedetect-dataset-radio-frequency-dataset-unmanned-aerial-system-uas-signals-machine"
+default_exclude = true
+note = "OPEN: DroneDetect drone codes other than MIN are not published; read the archive listing, then add overrides"
+
+[[datasets.dronedetect.overrides]]
+match = "MIN_"
+label = "wifi"
+strength = "weak"
+emitter_id = "DJI_mavic_mini"
+note = "DJI 'Enhanced Wi-Fi'; interference files also hold other Wi-Fi/Bluetooth"
+
+# ---------------------------------------------------------------------------
+# FGI Jammer Test 2023 (Fairdata). Live GPS L1 C/A and Galileo E1 recordings,
+# LabSat 3 wideband. Folders: JT23_4.1.5 "Continuous high powered pseudo-random
+# noise jamming" (400 s), JT23_16.1.1 incoherent spoofing, JT23_17.1.6 coherent
+# spoofing. https://research.fi/en/results/dataset/2eee8cfd-db00-4e46-bd62-d7632c09c700
+# ---------------------------------------------------------------------------
+[datasets.fgi_jammer]
+license = "CC BY 4.0"
+is_real = true
+url = "https://etsin.fairdata.fi/dataset/2eee8cfd-db00-4e46-bd62-d7632c09c700"
+default_exclude = true
+note = "not one of the three JT23 scenario folders"
+
+# Weak: whether the 400 s recording has unjammed stretches is not stated.
+[[datasets.fgi_jammer.overrides]]
+match = "JT23_4.1.5"
+label = "gnss_jammer"
+strength = "weak"
+note = "high-power pseudo-random noise jamming on L1/E1"
+
+[[datasets.fgi_jammer.overrides]]
+match = "JT23_16.1.1"
+exclude = true
+note = "GNSS spoofing (incoherent): no spoofing class in the current set"
+
+[[datasets.fgi_jammer.overrides]]
+match = "JT23_17.1.6"
+exclude = true
+note = "GNSS spoofing (coherent): no spoofing class in the current set"
+
+# ---------------------------------------------------------------------------
+# GATEMAN: nine scenario folders "<GNSS>+<jammer>", each with a GNSS file and a
+# jamming file recorded synchronously by a USRP at 20 MS/s.
+# https://zenodo.org/records/2654322 (API: https://zenodo.org/api/records/2654322)
+# The loader passes the path below its root, e.g.
+# "rawdata/GPSL1+AMtone/AMtone@20MSps.bin", hence the leading "/" in matches
+# ("/GPSL1@" never matches the folder name "GPSL1+AMtone").
+# ---------------------------------------------------------------------------
+[datasets.gateman]
+license = "CC BY 4.0"
+is_real = true
+url = "https://zenodo.org/records/2654322"
+default_exclude = true
+note = "not a known GATEMAN signal file"
+
+# Record: "The tone is simple a sinosoidal waveform in the centre of the GNSS
+# bands. The chirps are linear frequency modulated waveforms (sawtooth) ...
+# sweep range of 10 MHz and 20 MHz", generated with a vector signal transceiver.
+[[datasets.gateman.overrides]]
+match = "/AMtone@"
+label = "gnss_jammer"
+strength = "strong"
+note = "tone jammer, lab-generated"
+
+[[datasets.gateman.overrides]]
+match = "/Chirp10MHz@"
+label = "gnss_jammer"
+strength = "strong"
+note = "10 MHz chirp jammer, lab-generated"
+
+[[datasets.gateman.overrides]]
+match = "/Chirp20MHz@"
+label = "gnss_jammer"
+strength = "strong"
+note = "20 MHz chirp jammer, lab-generated"
+
+# GNSS-only files. Record: "The RF GNSS signal was generated with a GNSS signal
+# generator, it contains only a single spreading sequence", static, one PRN at
+# -70 dBm (GPS L1/L5) or -68.5 dBm (Galileo E1). Excluded, not `background`:
+# a single simulator PRN at about -70 dBm is a strong, clean spread-spectrum
+# signal, unlike a real L1 band (sky signals far below the noise floor plus
+# ambient), so labelling it background would teach a lab artefact. The clean-L1
+# baseline PLAN 2.2 asks for stays open.
+[[datasets.gateman.overrides]]
+match = "/GPSL1@"
+exclude = true
+note = "GNSS-only (one simulated GPS L1 PRN at -70 dBm): not a realistic background"
+
+[[datasets.gateman.overrides]]
+match = "/GPSL5@"
+exclude = true
+note = "GNSS-only (one simulated GPS L5 PRN at -70 dBm): not a realistic background"
+
+[[datasets.gateman.overrides]]
+match = "/GALE1@"
+exclude = true
+note = "GNSS-only (one simulated Galileo E1 PRN at -68.5 dBm): not a realistic background"
+
+# ---------------------------------------------------------------------------
+# GNSS L1 jammed with a triangular jammer, part 1: five gzip files, 10 MHz,
+# jamming power 85, 80, 75, 70, 65 (units not stated). Files hold the jammed
+# GNSS signal. https://zenodo.org/records/14859381
+# Weak: at the lower powers the jammer may not dominate every window.
+# ---------------------------------------------------------------------------
+[datasets.triangular_l1]
+license = "CC BY 4.0"
+is_real = true
+url = "https://zenodo.org/records/14859381"
+default_label = "gnss_jammer"
+default_strength = "weak"
+
+# ---------------------------------------------------------------------------
+# LoRaIQ (EPFL): 75,000+ LoRa frames at 862.5 MHz, one SigMF file per frame
+# with annotations. https://zenodo.org/records/17708397
+# Weak: samples outside the annotated frame are noise; use the annotations.
+# ---------------------------------------------------------------------------
+[datasets.loraiq]
+license = "CC BY 4.0"
+is_real = true
+url = "https://zenodo.org/records/17708397"
+default_label = "lora"
+default_strength = "weak"
+
+# ---------------------------------------------------------------------------
+# Drexel CBRS radar through a USRP: 900 radar and 900 "simulated random noise"
+# examples, waveforms from NIST's simulated radar generator, sent over a coaxial
+# cable at 10 MS/s. https://zenodo.org/records/4521678
+# is_real = false: the waveforms are simulated (only the radio chain is real).
+# The file layout inside Group6_data.tar is not opened: the "noise" match is a
+# guess that the engineer writing the loader must confirm.
+# ---------------------------------------------------------------------------
+[datasets.drexel_cbrs_radar]
+license = "CC BY 4.0"
+is_real = false
+url = "https://zenodo.org/records/4521678"
+default_label = "pulsed_radar"
+default_strength = "weak"
+
+[[datasets.drexel_cbrs_radar.overrides]]
+match = "noise"
+label = "background"
+strength = "weak"
+note = "noise-only waveform (radarStatus 0) through the USRP; the loader looks each waveform up as <file>#noise or <file>#radar"
+
+# ---------------------------------------------------------------------------
+# ADS-B 24-hour recording, USRP B210 at 8 MHz, 1090 MHz, 130+ aircraft.
+# https://ieee-dataport.org/open-access/24-hour-signal-recording-dataset-labels-cybersecurity-and-iot
+# Weak: a continuous recording has gaps between messages; the per-message I/Q
+# the enhanced gr-adsb writes would be strong once its files are seen.
+# ---------------------------------------------------------------------------
+[datasets.adsb]
+license = "CC BY (version not stated on the page)"
+is_real = true
+url = "https://ieee-dataport.org/open-access/24-hour-signal-recording-dataset-labels-cybersecurity-and-iot"
+default_label = "adsb"
+default_strength = "weak"
+
+# ---------------------------------------------------------------------------
+# NIST RF dataset of incumbent radar systems in the 3.5 GHz CBRS band:
+# "synthetically generated radar waveforms with added white Gaussian noise".
+# https://data.nist.gov/od/id/mds2-2116
+# ---------------------------------------------------------------------------
+[datasets.nist_radar]
+license = "NIST open licence (https://www.nist.gov/open/license)"
+is_real = false
+url = "https://data.nist.gov/od/id/mds2-2116"
+default_label = "pulsed_radar"
+default_strength = "weak"
+
+# ---------------------------------------------------------------------------
+# rtl_433_tests: the repository states no licence (GitHub detects none and the
+# root has no LICENSE file), so its recordings are excluded until one is found.
+# https://github.com/merbanan/rtl_433_tests
+# ---------------------------------------------------------------------------
+[datasets.rtl_433]
+license = "none stated (used by decision of Odon, Nov 12 2026; not cleared for redistribution)"
+is_real = true
+url = "https://github.com/merbanan/rtl_433_tests"
+default_label = "other_ism"
+default_strength = "weak"
+# The repository states no licence (GitHub API, Nov 12). It was excluded until
+# Odon decided on Nov 12 to train on it; models trained with it carry that
+# licence string per window. Check with the team before sharing such a model.

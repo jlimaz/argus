@@ -16,9 +16,9 @@ def main():
     started = time.perf_counter()
     unload()
     timings = [("ollama unload", time.perf_counter() - started)]
-    lines = (ROOT / "data" / "test_observations.jsonl").read_text().splitlines()
+    lines = (ROOT / "data" / "observations-full.jsonl").read_text().splitlines()
     observations = [json.loads(line) for line in lines if line.strip()][:MAX_OBSERVATIONS]
-    questions = json.loads((ROOT / "data" / "questions_20.json").read_text())
+    questions = json.loads((ROOT / "data" / "data-full.json").read_text())
     started = time.perf_counter()
     agent = load_agent()
     timings.append(("laya load", time.perf_counter() - started))

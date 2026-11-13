@@ -1,0 +1,23 @@
+# Baseline: softmax regression on burst features, trained by gradient descent (PLAN.md section 5.1).
+[run]
+name = "baseline_softmax_v1"
+seed = 1
+out_dir = "runs"
+device = "cpu"
+
+[data]
+manifest = "data/manifest.jsonl"
+classes = "v1"
+max_windows_per_class = 30000
+use_simulated = false
+
+[model]
+name = "softmax_regression"
+
+[optim]
+name = "sgd"
+lr = 0.1
+momentum = 0.9
+schedule = "cosine"
+epochs = 50
+batch_size = 1024

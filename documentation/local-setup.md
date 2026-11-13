@@ -30,8 +30,8 @@ The chat model the app expects is `qwen2.5:14b`. The chat uses it to call a tool
 ## 2. Clone and Python environment
 
 ```bash
-git clone https://github.com/jlimaz/undefined-sprint-hack.git
-cd undefined-sprint-hack
+git clone https://github.com/Gabriel-smm/argus.git
+cd argus
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -97,7 +97,7 @@ export LAYA_CHECKPOINT=/path/to/laya-rf-modes
 
 ### Option B. Train the checkpoint
 
-Stay at the repository root with the virtual environment active. Do not run `git checkout laya`. That step is in `finetune/README.md` and is out of date; this tree already contains the pipeline and the fine-tuning code.
+Stay at the repository root with the virtual environment active.
 
 Build the training items. This takes a few seconds and should report 6,964 training rows and 774 test rows:
 
@@ -140,8 +140,8 @@ To start one process at a time, from `frontend/`: `npm run dev:frontend`, `npm r
 
 In the dashboard Library:
 
-1. Open **Knowledge** and add `data/questions_20.json` from the repository root (the file picker path is the file on disk).
-2. Open **Data** and add `data/test_observations.jsonl`. A JSON list of observations works too. Each row needs `center_frequency_hz`, `bandwidth_hz`, and `modulation`.
+1. Open **Knowledge** and add `data/data-full.json` from the repository root (the file picker path is the file on disk).
+2. Open **Data** and add `data/observations-full.jsonl`. A JSON list of observations works too. Each row needs `center_frequency_hz`, `bandwidth_hz`, and `modulation`.
 3. A file that is not valid, or that was added on the wrong tab, shows an error under its name and cannot be selected.
 4. Press **Run Laya**. Only the first 100 rows are classified. Chat is paused while Laya has the GPU. On a small GPU this is often under a minute for 100 rows, plus the time to load Ollama again afterward (several seconds to half a minute). Asking the chat to analyze the remaining rows, or a different number, runs Laya on that slice and summarizes it.
 5. When the Library shows **Active**, ask the chat about the result. It answers from Laya's output. If the result does not contain the answer, it says so.
@@ -176,6 +176,37 @@ To serve the same HTTP API the dashboard uses, without Next.js:
 python -m uvicorn pipeline.server:app --host 127.0.0.1 --port 8000
 ```
 
+### From a capture file
+
+`pipeline/ingest.py` turns a radio capture into a data file you can add under **Data**. It finds each signal and writes one row per signal, with `modulation` set to `"unknown"` (a sweep or a burst measurement cannot see modulation).
+
+```bash
+# A sweep from rtl_power or hackrf_sweep (CSV)
+rtl_power -f 88M:108M:100k -i 10 -e 2m fm.csv
+python -m pipeline.ingest fm.csv -o fm-signals.jsonl
+
+# A raw IQ recording: rtl_sdr writes .cu8, hackrf_transfer writes .cs8.
+# These files do not record how they were made, so give the sample rate and tuned frequency.
+python -m pipeline.ingest capture.cs8 --sample-rate 20M --center-freq 2.437G -o signals.jsonl
+
+# A SigMF recording (.sigmf-meta next to .sigmf-data); the metadata gives rate and frequency
+python -m pipeline.ingest recording.sigmf-meta -o signals.jsonl
+```
+
+What each row carries besides the three fields the classifier reads:
+
+- **Sweeps** (`pipeline/sweep.py`): `power_db`, `noise_floor_db` (the local floor under the signal), `snr_db`, `occupancy` (the share of sweep passes the signal was seen in: near 1 for a signal that is always on, low for one that comes and goes), `passes`, `first_seen` and `last_seen`.
+- **IQ** (`pipeline/iq.py`, through `pipeline/features.py`, the same code that measures the training rows): `snr_db`, `duty_cycle`, `burst_duration_s`, `hopping`, `pulse_interval_s`, `truncated` and `start_s` (seconds from the start of the file).
+
+**Signal class (optional, IQ only).** Add `--classify --model <run folder>` to run each burst through the signal classifier in `mod-classifier/` (see `mod-classifier/README.md`). Each row then also gets `signal_class` (for example `wifi`, or `unknown` when the classifier is not confident enough), `class_confidence` (0 to 1) and `class_probs` (one probability per class). `modulation` stays `"unknown"`. The run folder must hold a `calibration.json` (or pass `--calibration`); its threshold decides what counts as `unknown`. Without `--classify` the output is exactly as before.
+
+```bash
+python -m pipeline.ingest capture.cs8 --sample-rate 20M --center-freq 2.437G \
+    --classify --model mod-classifier/runs/<name> -o signals.jsonl
+```
+
+Signals are runs of bins at least 10 dB above the local noise floor; `--threshold-db` changes that for sweeps. Large IQ files are read in chunks, and a burst that crosses a chunk boundary shows up in both chunks marked `truncated`. SigMF annotations are not used yet, and real-valued (`rf32`, `ri16`) and multi-channel recordings are refused.
+
 ## 8. If something fails
 
 **Ollama is not running.** `curl http://127.0.0.1:11434/api/tags` fails, or a run errors while calling the model. Start `ollama serve` or the Ollama app, then `ollama pull qwen2.5:14b`.
@@ -199,3 +230,5 @@ source .venv/bin/activate
 pip install -r requirements-dev.txt
 python -m pytest tests
 ```
+
+Every pull request to `main` runs the same tests, plus `npx oxlint` in `frontend/`, through [.github/workflows/ci.yml](../.github/workflows/ci.yml). Run both locally before pushing.

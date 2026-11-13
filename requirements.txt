@@ -1,3 +1,4 @@
 laya
+numpy
 fastapi
 uvicorn

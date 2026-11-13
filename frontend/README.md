@@ -42,8 +42,8 @@ This is the [assistant-ui](https://github.com/assistant-ui/assistant-ui) starter
 
 ## Using it
 
-1. In the Library, open **Knowledge** and add a Laya questions file, such as `data/questions_20.json`.
-2. Open **Data** and add observations, such as `data/test_observations.jsonl`. JSON lists and one-object-per-line files both work.
+1. In the Library, open **Knowledge** and add a Laya questions file, such as `data/data-full.json`.
+2. Open **Data** and add observations, such as `data/observations-full.jsonl`. JSON lists and one-object-per-line files both work.
 3. Each file is checked as it is added. One that is not valid JSON, or sits in the wrong tab, says so under its name and cannot be picked.
 4. Press **Run Laya**. Chat is paused while Laya has the GPU. Only the first 100 rows of the data file are classified. Asking the chat to analyze the remaining rows, or a different number, runs Laya on that slice and summarizes it.
 5. When the Library shows **Active**, ask the chat about the result. It answers from Laya's output only, and says so when the answer is not there.

@@ -1,0 +1,25 @@
+# mod-classifier requirements, for CRC (training and bulk data preparation).
+# Python 3.12. Kept apart from the repo's root requirements so the repo's CI
+# stays light (it has no torch).
+#
+# Laptop: building and testing the pipeline needs only numpy and pytest, which
+# the repo's .venv already has. Do not install torch on the laptop.
+#
+# On CRC, check what the cluster already provides before installing:
+#   module avail python
+#   module avail cuda
+#   module avail pytorch
+# then build a venv on CRC storage and `pip install -r requirements.txt`.
+# Pick the torch build that matches the CUDA module (see pytorch.org's
+# "get started" page for the right index URL), then pin exact versions here
+# from `pip freeze` after the first successful CRC run.
+
+numpy>=1.26,<3
+scipy>=1.11            # polyphase resampling and filters in the front end
+h5py>=3.10             # NIST Wi-Fi/Bluetooth (HDF5), NIST radar (MATLAB v7.3)
+torch>=2.3,<3          # model and training; CUDA build on CRC
+scikit-learn>=1.4      # softmax-regression and kNN baselines, metrics
+lightgbm>=4.3          # gradient-boosted baseline
+unrar-cffi>=0.2        # DroneRF archives, read without extraction
+pytest>=8              # tests
+matplotlib>=3.8        # progress.png during training, evaluation plots

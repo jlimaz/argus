@@ -1,0 +1,22 @@
+[run]
+name = "baseline_majority_v1_w5"
+seed = 1
+out_dir = "runs"
+device = "cpu"
+
+[data]
+manifest = "data/manifest_w5.jsonl"
+classes = "v2c"
+max_windows_per_class = 30000
+use_simulated = false
+
+[model]
+name = "majority"
+
+[optim]
+name = "sgd"
+lr = 0.1
+momentum = 0.9
+schedule = "cosine"
+epochs = 50
+batch_size = 1024

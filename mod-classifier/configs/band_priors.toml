@@ -1,0 +1,131 @@
+# Band prior for inference (PLAN 5.7). DRAFT: every value below waits for Diana's review.
+#
+# The classifier's burst probabilities are multiplied by these weights for the
+# band the burst's centre frequency falls in, then renormalised. A class not
+# listed in a band keeps weight 1.0; a frequency outside every band leaves all
+# classes at 1.0. Weights are never 0: a soft prior, so a surprise stays
+# visible. The first matching band wins: narrow bands first.
+#
+# `source` is a URL that was opened when the entry was written, or "unsourced".
+# The only NTIA source opened is the U.S. Frequency Allocation Chart
+# (September 2025, data as of 31 March 2025), a wall chart that, in its own
+# words, "does not contain all the information published in the Table, such as
+# international allocations or footnotes". ISM designations are footnotes, so
+# the ISM bands below are marked unsourced until the FCC/NTIA table text is read.
+#
+# The numbers themselves (0.05, 0.2) are judgement, not measurement. Owner: e10.
+
+# 88-108 MHz: shown as BROADCASTING on the chart.
+[[band]]
+name = "fm_broadcast"
+lo_hz = 88e6
+hi_hz = 108e6
+source = "https://www.ntia.gov/sites/default/files/2025-09/ntia-us-frequency-allocations.pdf"
+note = "Chart shows Broadcasting across 88-108 MHz. Packet links and Wi-Fi here are implausible."
+[band.weights]
+drone_link = 0.05
+wifi = 0.05
+bluetooth = 0.05
+lora = 0.05
+adsb = 0.05
+gnss_jammer = 0.2
+
+# 1090 MHz ADS-B sits in 960-1164 MHz, shown as AERONAUTICAL RADIONAVIGATION / AERONAUTICAL MOBILE (R).
+# The chart does not name ADS-B; that 1090 MHz is ADS-B is unsourced here.
+[[band]]
+name = "adsb_1090"
+lo_hz = 1085e6
+hi_hz = 1095e6
+source = "https://www.ntia.gov/sites/default/files/2025-09/ntia-us-frequency-allocations.pdf"
+note = "Chart shows aeronautical services at 960-1164 MHz; the 1085-1095 MHz edges come from mcls.contracts.BANDS, and 'ADS-B at 1090 MHz' is not stated on the chart."
+[band.weights]
+drone_link = 0.05
+wifi = 0.05
+bluetooth = 0.05
+lora = 0.05
+
+# GNSS L1. The chart's 1559-1610 MHz labels are too small to read in the copy opened.
+[[band]]
+name = "gnss_l1"
+lo_hz = 1559e6
+hi_hz = 1610e6
+source = "unsourced"
+note = "Edges from mcls.contracts.BANDS. Jammers are the only class in our set expected here (judgement)."
+[band.weights]
+drone_link = 0.05
+wifi = 0.05
+bluetooth = 0.05
+lora = 0.05
+adsb = 0.05
+other_ism = 0.05
+
+[[band]]
+name = "ism_433"
+lo_hz = 433.05e6
+hi_hz = 434.79e6
+source = "unsourced"
+note = "ISM designation is a footnote, not on the chart."
+[band.weights]
+wifi = 0.05
+adsb = 0.05
+gnss_jammer = 0.2
+
+[[band]]
+name = "srd_868"
+lo_hz = 863e6
+hi_hz = 870e6
+source = "unsourced"
+note = "European SRD band (LoRaIQ is 862.5 MHz per PLAN 2.2); not a U.S. allocation."
+[band.weights]
+wifi = 0.05
+adsb = 0.05
+gnss_jammer = 0.2
+
+[[band]]
+name = "ism_915"
+lo_hz = 902e6
+hi_hz = 928e6
+source = "unsourced"
+note = "ISM designation is a footnote, not on the chart. Some drone control links use 900 MHz (unsourced), so drone_link stays 1.0."
+[band.weights]
+wifi = 0.05
+adsb = 0.05
+gnss_jammer = 0.2
+
+# 2400-2483.5 MHz: the chart marks it as a "Key Wi-Fi Band" (hatched). Bluetooth and drone links are not on the chart.
+[[band]]
+name = "ism_2400"
+lo_hz = 2400e6
+hi_hz = 2483.5e6
+source = "https://www.ntia.gov/sites/default/files/2025-09/ntia-us-frequency-allocations.pdf"
+note = "Chart marks 2400-2483.5 MHz as a Key Wi-Fi Band. Bluetooth and drone_link at 1.0 are unsourced judgement."
+[band.weights]
+adsb = 0.05
+lora = 0.2
+gnss_jammer = 0.2
+pulsed_radar = 0.2
+
+[[band]]
+name = "cbrs_3500"
+lo_hz = 3550e6
+hi_hz = 3700e6
+source = "unsourced"
+note = "CBRS shares this band with radar (the PLAN's red scenario). Edges from mcls.contracts.BANDS."
+[band.weights]
+bluetooth = 0.05
+lora = 0.05
+adsb = 0.05
+gnss_jammer = 0.2
+
+# 5 GHz: the chart hatches several Key Wi-Fi Bands between about 5.15 and 5.9 GHz; exact edges not readable in the copy opened.
+[[band]]
+name = "unii_5ghz"
+lo_hz = 5150e6
+hi_hz = 5925e6
+source = "https://www.ntia.gov/sites/default/files/2025-09/ntia-us-frequency-allocations.pdf"
+note = "Chart marks Key Wi-Fi Bands in 5 GHz; edges from mcls.contracts.BANDS (unii_5ghz). 5.8 GHz drone video links (PLAN 5.7) keep drone_link at 1.0, unsourced."
+[band.weights]
+bluetooth = 0.05
+lora = 0.05
+adsb = 0.05
+gnss_jammer = 0.2

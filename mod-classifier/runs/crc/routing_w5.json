@@ -1,0 +1,367 @@
+{
+  "classes": [
+    "drone_link",
+    "wifi",
+    "bluetooth",
+    "background",
+    "gnss_jammer",
+    "lora",
+    "pulsed_radar",
+    "other_ism"
+  ],
+  "models": [
+    {
+      "name": "cnn2d_v1_w5",
+      "temperature": 0.6844243794263852,
+      "unknown_threshold": 0.687358561775752,
+      "val": {
+        "n": 38636,
+        "accuracy": 0.9146391966042033,
+        "macro_f1": 0.8679871339662758,
+        "f1": {
+          "drone_link": 0.5334665334665335,
+          "wifi": 0.9170114942528735,
+          "bluetooth": 0.9422270037654653,
+          "background": 0.9891022314478464,
+          "gnss_jammer": 0.9992518170158188,
+          "lora": 0.8262377191292622,
+          "other_ism": 0.8686131386861314
+        }
+      }
+    },
+    {
+      "name": "baseline_knn_v1_w5",
+      "temperature": 3.4064820468954276,
+      "unknown_threshold": 0.5028683711678362,
+      "val": {
+        "n": 38636,
+        "accuracy": 0.8599233875142355,
+        "macro_f1": 0.8585339795823906,
+        "f1": {
+          "drone_link": 0.7690964644260149,
+          "wifi": 0.9559322033898305,
+          "bluetooth": 0.8947588223011067,
+          "background": 0.9993006993006993,
+          "gnss_jammer": 0.8838290516778924,
+          "lora": 0.7880930232558139,
+          "other_ism": 0.7187275927253765
+        }
+      }
+    },
+    {
+      "name": "baseline_lightgbm_v1_w5",
+      "temperature": 1.9639977169570357,
+      "unknown_threshold": 0.5323225276571656,
+      "val": {
+        "n": 38636,
+        "accuracy": 0.8373278807329951,
+        "macro_f1": 0.809535285211153,
+        "f1": {
+          "drone_link": 0.34856351678781583,
+          "wifi": 0.9603954499434222,
+          "bluetooth": 0.9037797089310019,
+          "background": 0.9994756161510225,
+          "gnss_jammer": 0.7810974419058778,
+          "lora": 0.8143297380585517,
+          "other_ism": 0.8591055247003799
+        }
+      }
+    }
+  ],
+  "fallback_model": "cnn2d_v1_w5",
+  "min_recordings": 2,
+  "min_windows": 200,
+  "bandwidth_buckets": [
+    "narrow (<100 kHz)",
+    "medium (0.1-1 MHz)",
+    "wide (1-5 MHz)",
+    "very wide (>5 MHz)"
+  ],
+  "routes": {
+    "band": {
+      "gnss_l1": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9985,
+          "baseline_knn_v1_w5": 0.7918,
+          "baseline_lightgbm_v1_w5": 0.6408
+        },
+        "val_windows": 9363,
+        "val_recordings": 2,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "gnss_jammer"
+        ]
+      },
+      "ism_2400": {
+        "model": "baseline_lightgbm_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9041,
+          "baseline_knn_v1_w5": 0.9222,
+          "baseline_lightgbm_v1_w5": 0.9329
+        },
+        "val_windows": 14405,
+        "val_recordings": 56,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "drone_link",
+          "wifi",
+          "bluetooth",
+          "background"
+        ]
+      },
+      "ism_433": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9722,
+          "baseline_knn_v1_w5": 0.9085,
+          "baseline_lightgbm_v1_w5": 0.9615
+        },
+        "val_windows": 5245,
+        "val_recordings": 40,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "other_ism"
+        ]
+      },
+      "ism_5800": {
+        "model": "baseline_lightgbm_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9622,
+          "baseline_knn_v1_w5": 0.9795,
+          "baseline_lightgbm_v1_w5": 0.9901
+        },
+        "val_windows": 2834,
+        "val_recordings": 30,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "drone_link",
+          "wifi"
+        ]
+      },
+      "ism_915": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9973,
+          "baseline_knn_v1_w5": 0.8374,
+          "baseline_lightgbm_v1_w5": 0.9593
+        },
+        "val_windows": 369,
+        "val_recordings": 6,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "other_ism"
+        ]
+      },
+      "other": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.731,
+          "baseline_knn_v1_w5": 0.7215,
+          "baseline_lightgbm_v1_w5": 0.7212
+        },
+        "val_windows": 6126,
+        "val_recordings": 5,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "lora",
+          "other_ism"
+        ]
+      },
+      "srd_868": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 1.0,
+          "baseline_knn_v1_w5": 0.8673,
+          "baseline_lightgbm_v1_w5": 0.9898
+        },
+        "val_windows": 294,
+        "val_recordings": 5,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "other_ism"
+        ]
+      }
+    },
+    "bandwidth": {
+      "medium (0.1-1 MHz)": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.8511,
+          "baseline_knn_v1_w5": 0.8104,
+          "baseline_lightgbm_v1_w5": 0.8401
+        },
+        "val_windows": 12054,
+        "val_recordings": 55,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "wifi",
+          "lora",
+          "other_ism"
+        ]
+      },
+      "narrow (<100 kHz)": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 1.0,
+          "baseline_knn_v1_w5": 1.0,
+          "baseline_lightgbm_v1_w5": 1.0
+        },
+        "val_windows": 4,
+        "val_recordings": 1,
+        "reason": "too little validation data: overall best model",
+        "classes_seen": [
+          "wifi"
+        ]
+      },
+      "unknown": {
+        "model": "cnn2d_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9989,
+          "baseline_knn_v1_w5": 0.8405,
+          "baseline_lightgbm_v1_w5": 0.7248
+        },
+        "val_windows": 12222,
+        "val_recordings": 3,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "background",
+          "gnss_jammer"
+        ]
+      },
+      "very wide (>5 MHz)": {
+        "model": "baseline_lightgbm_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.9157,
+          "baseline_knn_v1_w5": 0.9315,
+          "baseline_lightgbm_v1_w5": 0.9408
+        },
+        "val_windows": 13703,
+        "val_recordings": 85,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "drone_link",
+          "wifi",
+          "bluetooth"
+        ]
+      },
+      "wide (1-5 MHz)": {
+        "model": "baseline_lightgbm_v1_w5",
+        "val_accuracy": {
+          "cnn2d_v1_w5": 0.4885,
+          "baseline_knn_v1_w5": 0.6355,
+          "baseline_lightgbm_v1_w5": 0.7198
+        },
+        "val_windows": 653,
+        "val_recordings": 14,
+        "reason": "best validation accuracy in this group",
+        "classes_seen": [
+          "drone_link",
+          "wifi",
+          "bluetooth"
+        ]
+      }
+    }
+  },
+  "test": {
+    "cnn2d_v1_w5 alone": {
+      "n": 34488,
+      "accuracy": 0.9144050104384134,
+      "macro_f1": 0.8714506200687925,
+      "f1": {
+        "drone_link": 0.7834843907351461,
+        "wifi": 0.9557735122450208,
+        "bluetooth": 0.9337864277623313,
+        "background": 0.9976013129655347,
+        "gnss_jammer": 0.9995721925133689,
+        "lora": 0.7184006313297382,
+        "other_ism": 0.7115358729304079
+      }
+    },
+    "baseline_knn_v1_w5 alone": {
+      "n": 34488,
+      "accuracy": 0.860792159591742,
+      "macro_f1": 0.8252032808225715,
+      "f1": {
+        "drone_link": 0.7174677608440797,
+        "wifi": 0.9590745262178816,
+        "bluetooth": 0.9498493327593629,
+        "background": 0.9992406985573273,
+        "gnss_jammer": 0.8904572682521796,
+        "lora": 0.7134099616858236,
+        "other_ism": 0.5469234174413458
+      }
+    },
+    "baseline_lightgbm_v1_w5 alone": {
+      "n": 34488,
+      "accuracy": 0.8267803293899327,
+      "macro_f1": 0.758249733484445,
+      "f1": {
+        "drone_link": 0.14658444022770398,
+        "wifi": 0.9707615855772564,
+        "bluetooth": 0.9690564393113968,
+        "background": 0.9991144845034788,
+        "gnss_jammer": 0.7816346466948877,
+        "lora": 0.7204472843450479,
+        "other_ism": 0.7201492537313432
+      }
+    },
+    "average of all models": {
+      "n": 34488,
+      "accuracy": 0.9154198561818604,
+      "macro_f1": 0.8638148889404879,
+      "f1": {
+        "drone_link": 0.7136258660508084,
+        "wifi": 0.9711231189355645,
+        "bluetooth": 0.9705723833135712,
+        "background": 0.9994937990382182,
+        "gnss_jammer": 0.9850260416666666,
+        "lora": 0.718585005279831,
+        "other_ism": 0.6882780082987552
+      }
+    },
+    "route by band": {
+      "n": 34488,
+      "accuracy": 0.9247854326142426,
+      "macro_f1": 0.8830172443291696,
+      "f1": {
+        "drone_link": 0.8111587982832618,
+        "wifi": 0.9783368273934312,
+        "bluetooth": 0.9622416964189116,
+        "background": 0.9991144845034788,
+        "gnss_jammer": 0.9995721925133689,
+        "lora": 0.7188733877336141,
+        "other_ism": 0.71182332345812
+      }
+    },
+    "route by bandwidth": {
+      "n": 34488,
+      "accuracy": 0.9228427279053584,
+      "macro_f1": 0.8693819118870987,
+      "f1": {
+        "drone_link": 0.7161066048667439,
+        "wifi": 0.970873786407767,
+        "bluetooth": 0.9690564393113968,
+        "background": 0.9993676489186796,
+        "gnss_jammer": 0.9995721925133689,
+        "lora": 0.7188733877336141,
+        "other_ism": 0.71182332345812
+      }
+    },
+    "oracle (ceiling, not achievable)": {
+      "n": 34488,
+      "accuracy": 0.9435165854790072,
+      "macro_f1": 0.9071205265471626,
+      "f1": {
+        "drone_link": 0.8320855614973262,
+        "wifi": 0.990916501688599,
+        "bluetooth": 0.9842988630211154,
+        "background": 0.9998734977862114,
+        "gnss_jammer": 0.9996791786974655,
+        "lora": 0.7775613556680949,
+        "other_ism": 0.7654287274713271
+      }
+    }
+  },
+  "note": "Routes are chosen on validation only; test scores them. Bands mostly come from one dataset each, so a route may reflect that dataset more than the signal type. pulsed_radar has no real validation or test data (simulated only)."
+}

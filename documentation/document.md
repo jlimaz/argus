@@ -8,7 +8,7 @@
 |---|---|
 | Event | SprintHack@ND |
 | Team | Gabriel Marques, José Lima |
-| Repository | <https://github.com/jlimaz/undefined-sprint-hack> |
+| Repository | <https://github.com/Gabriel-smm/argus> |
 | Runs on | One computer, with no cloud service |
 
 ## Where to find each judging criterion
@@ -74,18 +74,18 @@ Save this as `my_signals.json`, change the numbers to anything you like, and add
 
 The three rows are written to look like a PSK keyboard signal on the 20 metre amateur band, a NAVTEX marine broadcast, and a Wi-Fi channel, which none of the eight named signal types covers. Then:
 
-1. Under **Knowledge**, add [data/questions_20.json](../data/questions_20.json).
+1. Under **Knowledge**, add [data/data-full.json](../data/data-full.json).
 2. Press **Run Laya**. The chat is paused while the classifier runs.
 3. When the Library shows **Active**, ask the chat what it found.
 
 Rules for a data file:
 
-- A JSON list of objects, or one object per line (JSONL), as in [data/test_observations.jsonl](../data/test_observations.jsonl).
+- A JSON list of objects, or one object per line (JSONL), as in [data/observations-full.jsonl](../data/observations-full.jsonl).
 - Each row needs `center_frequency_hz` and `bandwidth_hz` (numbers, in Hz) and `modulation` (text; `"unknown"` is accepted).
 - `id` is optional and defaults to the row number. Other fields are ignored by the classifier.
 - Up to 2 MB per file. Only the first 100 rows are classified, and the chat is told when rows were left out.
 
-You can also bring your own questions. A knowledge file is one JSON object of questions, each with `"type": "choice"`, `instructions` as text, and `criteria` with at least two answers and a description of each. The model was fine-tuned on the one question in `data/questions_20.json`; other questions run, but we have not measured how well it answers them.
+You can also bring your own questions. A knowledge file is one JSON object of questions, each with `"type": "choice"`, `instructions` as text, and `criteria` with at least two answers and a description of each. The model was fine-tuned on the one question in `data/data-full.json`; other questions run, but we have not measured how well it answers them.
 
 ### When the input is wrong
 

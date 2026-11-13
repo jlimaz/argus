@@ -1,0 +1,1108 @@
+{
+  "run": "runs/baseline_knn_v1_w5",
+  "meta": {
+    "git_commit": "b4a9300403ea0451dc313bdeda1031dece3e1fa1",
+    "manifest_sha256": "fdf44b0992e391e12eaf6602cd5123a1f2f131c580b7739009e569742eecf4b0",
+    "seed": 1,
+    "classes": [
+      "drone_link",
+      "wifi",
+      "bluetooth",
+      "background",
+      "gnss_jammer",
+      "lora",
+      "pulsed_radar",
+      "other_ism"
+    ],
+    "model": "knn",
+    "created": "2026-11-13T02:02:56+00:00"
+  },
+  "classes": [
+    "drone_link",
+    "wifi",
+    "bluetooth",
+    "background",
+    "gnss_jammer",
+    "lora",
+    "pulsed_radar",
+    "other_ism"
+  ],
+  "manifest": {
+    "path": "data/manifest_w5.jsonl",
+    "sha256": "fdf44b0992e391e12eaf6602cd5123a1f2f131c580b7739009e569742eecf4b0",
+    "matches_meta": true,
+    "rows": 251532,
+    "train_rows": {
+      "real": 158873,
+      "synthetic": 19535
+    },
+    "leakage": {
+      "ok": true,
+      "error": null,
+      "checks": "recording_id and window_id across splits"
+    },
+    "burst_grouping": {
+      "burst_id": 175690,
+      "inferred_equal_stats": 0,
+      "single_window_no_stats": 75842
+    }
+  },
+  "training_rows": {
+    "real": 158873,
+    "synthetic": 19535,
+    "synthetic_in_training": true
+  },
+  "calibration": {
+    "temperature": 3.4064820468954276,
+    "unknown_threshold": 0.5028683711678362,
+    "ece_before_val": 0.09406767261867328,
+    "ece_after_val": 0.029145891449212376,
+    "held_out": {
+      "test": {
+        "ece_before": 0.10295766091582166,
+        "ece_after": 0.008445271703935261
+      }
+    }
+  },
+  "headline": {
+    "split": "test",
+    "role": "headline",
+    "n_windows": 34488,
+    "window_macro_f1": 0.8252032808225715,
+    "window_accuracy": 0.860792159591742,
+    "burst_macro_f1": 0.7612836530172818,
+    "recording_macro_f1": 0.8721251332391364
+  },
+  "splits": {
+    "test": {
+      "n_windows_file": 34488,
+      "n_not_in_manifest": 0,
+      "n_dropped_not_real": 0,
+      "real_only_verified": true,
+      "n_windows": 34488,
+      "window": {
+        "n": 34488,
+        "accuracy": 0.860792159591742,
+        "macro_f1": 0.8252032808225715,
+        "macro_f1_classes": [
+          "drone_link",
+          "wifi",
+          "bluetooth",
+          "background",
+          "gnss_jammer",
+          "lora",
+          "other_ism"
+        ],
+        "per_class": {
+          "drone_link": {
+            "precision": 0.996742671009772,
+            "recall": 0.5604395604395604,
+            "f1": 0.7174677608440797,
+            "support": 546,
+            "predicted": 307
+          },
+          "wifi": {
+            "precision": 0.956849553416077,
+            "recall": 0.9613098706444471,
+            "f1": 0.9590745262178816,
+            "support": 8581,
+            "predicted": 8621
+          },
+          "bluetooth": {
+            "precision": 0.930031612223393,
+            "recall": 0.9705300197932702,
+            "f1": 0.9498493327593629,
+            "support": 4547,
+            "predicted": 4745
+          },
+          "background": {
+            "precision": 0.999493670886076,
+            "recall": 0.9989878542510121,
+            "f1": 0.9992406985573273,
+            "support": 3952,
+            "predicted": 3950
+          },
+          "gnss_jammer": {
+            "precision": 1.0,
+            "recall": 0.8025443660466111,
+            "f1": 0.8904572682521796,
+            "support": 9354,
+            "predicted": 7507
+          },
+          "lora": {
+            "precision": 0.872539831302718,
+            "recall": 0.6033700583279326,
+            "f1": 0.7134099616858236,
+            "support": 4629,
+            "predicted": 3201
+          },
+          "pulsed_radar": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "support": 0,
+            "predicted": 0
+          },
+          "other_ism": {
+            "precision": 0.40133181744356017,
+            "recall": 0.8582841264327892,
+            "f1": 0.5469234174413458,
+            "support": 2879,
+            "predicted": 6157
+          }
+        },
+        "confusion": [
+          [
+            306,
+            235,
+            4,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            8249,
+            326,
+            2,
+            0,
+            0,
+            0,
+            3
+          ],
+          [
+            0,
+            134,
+            4413,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            3,
+            1,
+            3948,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            7507,
+            0,
+            0,
+            1847
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            2793,
+            0,
+            1836
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            407,
+            0,
+            2471
+          ]
+        ]
+      },
+      "recording": {
+        "n": 141,
+        "accuracy": 0.9787234042553191,
+        "macro_f1": 0.8721251332391364,
+        "macro_f1_classes": [
+          "drone_link",
+          "wifi",
+          "bluetooth",
+          "background",
+          "gnss_jammer",
+          "lora",
+          "other_ism"
+        ],
+        "per_class": {
+          "drone_link": {
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6666666666666666,
+            "support": 2,
+            "predicted": 1
+          },
+          "wifi": {
+            "precision": 0.9824561403508771,
+            "recall": 1.0,
+            "f1": 0.9911504424778761,
+            "support": 56,
+            "predicted": 57
+          },
+          "bluetooth": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 27,
+            "predicted": 27
+          },
+          "background": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 1,
+            "predicted": 1
+          },
+          "gnss_jammer": {
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6666666666666666,
+            "support": 2,
+            "predicted": 1
+          },
+          "lora": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1": 0.8,
+            "support": 3,
+            "predicted": 2
+          },
+          "pulsed_radar": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "support": 0,
+            "predicted": 0
+          },
+          "other_ism": {
+            "precision": 0.9615384615384616,
+            "recall": 1.0,
+            "f1": 0.9803921568627451,
+            "support": 50,
+            "predicted": 52
+          }
+        },
+        "confusion": [
+          [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            56,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            27,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            50
+          ]
+        ],
+        "mixed_label_groups": 0,
+        "windows_per_group_mean": 244.59574468085106
+      },
+      "burst": {
+        "n": 14731,
+        "accuracy": 0.8607019211187292,
+        "macro_f1": 0.7612836530172818,
+        "macro_f1_classes": [
+          "drone_link",
+          "wifi",
+          "bluetooth",
+          "background",
+          "gnss_jammer",
+          "lora",
+          "other_ism"
+        ],
+        "per_class": {
+          "drone_link": {
+            "precision": 1.0,
+            "recall": 0.35714285714285715,
+            "f1": 0.5263157894736842,
+            "support": 14,
+            "predicted": 5
+          },
+          "wifi": {
+            "precision": 0.9780621572212066,
+            "recall": 0.9870848708487084,
+            "f1": 0.9825528007346188,
+            "support": 542,
+            "predicted": 547
+          },
+          "bluetooth": {
+            "precision": 0.9384615384615385,
+            "recall": 1.0,
+            "f1": 0.9682539682539683,
+            "support": 122,
+            "predicted": 130
+          },
+          "background": {
+            "precision": 1.0,
+            "recall": 0.9989878542510121,
+            "f1": 0.9994936708860759,
+            "support": 3952,
+            "predicted": 3948
+          },
+          "gnss_jammer": {
+            "precision": 1.0,
+            "recall": 0.8025443660466111,
+            "f1": 0.8904572682521796,
+            "support": 9354,
+            "predicted": 7507
+          },
+          "lora": {
+            "precision": 0.8847583643122676,
+            "recall": 0.6071428571428571,
+            "f1": 0.7201210287443266,
+            "support": 392,
+            "predicted": 269
+          },
+          "pulsed_radar": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "support": 0,
+            "predicted": 0
+          },
+          "other_ism": {
+            "precision": 0.1393548387096774,
+            "recall": 0.9126760563380282,
+            "f1": 0.2417910447761194,
+            "support": 355,
+            "predicted": 2325
+          }
+        },
+        "confusion": [
+          [
+            5,
+            9,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            535,
+            7,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            122,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            3,
+            1,
+            3948,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            7507,
+            0,
+            0,
+            1847
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            238,
+            0,
+            154
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            31,
+            0,
+            324
+          ]
+        ],
+        "mixed_label_groups": 0,
+        "windows_per_group_mean": 2.3411852555834636,
+        "grouping": {
+          "windows_by_burst_id": 21182,
+          "windows_by_fallback": 13306,
+          "fallback_rule": "burst_id is None: consecutive windows of one shard with equal (snr_db_est, bandwidth_hz, duty_cycle); windows with no stats (idle background) are one-window groups"
+        },
+        "after_unknown_threshold": {
+          "rule": "p = softmax(mean(window logits) / temperature); unknown if max(p) < unknown_threshold; band prior NOT applied (it lives in mcls.infer.priors, used by mcls.infer.core.aggregate)",
+          "temperature": 3.4064820468954276,
+          "threshold": 0.5028683711678362,
+          "n_bursts": 14731,
+          "n_unknown": 35,
+          "kept_fraction": 0.9976240581087502,
+          "kept": {
+            "n": 14696,
+            "accuracy": 0.8617310832879695,
+            "macro_f1": 0.7658081307002879,
+            "macro_f1_classes": [
+              "drone_link",
+              "wifi",
+              "bluetooth",
+              "background",
+              "gnss_jammer",
+              "lora",
+              "other_ism"
+            ],
+            "per_class": {
+              "drone_link": {
+                "precision": 1.0,
+                "recall": 0.35714285714285715,
+                "f1": 0.5263157894736842,
+                "support": 14,
+                "predicted": 5
+              },
+              "wifi": {
+                "precision": 0.9779411764705882,
+                "recall": 0.994392523364486,
+                "f1": 0.9860982391102873,
+                "support": 535,
+                "predicted": 544
+              },
+              "bluetooth": {
+                "precision": 0.968,
+                "recall": 1.0,
+                "f1": 0.983739837398374,
+                "support": 121,
+                "predicted": 125
+              },
+              "background": {
+                "precision": 1.0,
+                "recall": 0.9989873417721519,
+                "f1": 0.9994934143870313,
+                "support": 3950,
+                "predicted": 3946
+              },
+              "gnss_jammer": {
+                "precision": 1.0,
+                "recall": 0.8025443660466111,
+                "f1": 0.8904572682521796,
+                "support": 9354,
+                "predicted": 7507
+              },
+              "lora": {
+                "precision": 0.9098039215686274,
+                "recall": 0.6137566137566137,
+                "f1": 0.7330173775671406,
+                "support": 378,
+                "predicted": 255
+              },
+              "pulsed_radar": {
+                "precision": null,
+                "recall": null,
+                "f1": null,
+                "support": 0,
+                "predicted": 0
+              },
+              "other_ism": {
+                "precision": 0.13872082973206568,
+                "recall": 0.9331395348837209,
+                "f1": 0.2415349887133183,
+                "support": 344,
+                "predicted": 2314
+              }
+            },
+            "confusion": [
+              [
+                5,
+                9,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                532,
+                3,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                121,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                3,
+                1,
+                3946,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                7507,
+                0,
+                0,
+                1847
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                232,
+                0,
+                146
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                23,
+                0,
+                321
+              ]
+            ]
+          },
+          "unknown_share_by_true_class": {
+            "drone_link": 0.0,
+            "wifi": 0.012915129151291513,
+            "bluetooth": 0.00819672131147541,
+            "background": 0.0005060728744939271,
+            "gnss_jammer": 0.0,
+            "lora": 0.03571428571428571,
+            "pulsed_radar": null,
+            "other_ism": 0.030985915492957747
+          },
+          "confusion_with_unknown": {
+            "columns": [
+              "drone_link",
+              "wifi",
+              "bluetooth",
+              "background",
+              "gnss_jammer",
+              "lora",
+              "pulsed_radar",
+              "other_ism",
+              "unknown"
+            ],
+            "matrix": [
+              [
+                5,
+                9,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                532,
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                7
+              ],
+              [
+                0,
+                0,
+                121,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1
+              ],
+              [
+                0,
+                3,
+                1,
+                3946,
+                0,
+                0,
+                0,
+                0,
+                2
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                7507,
+                0,
+                0,
+                1847,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                232,
+                0,
+                146,
+                14
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                23,
+                0,
+                321,
+                11
+              ]
+            ]
+          },
+          "coverage_accuracy_max_softmax": [
+            [
+              0.05003054782431607,
+              0.0
+            ],
+            [
+              0.09999321159459643,
+              0.0
+            ],
+            [
+              0.1500237594189125,
+              0.16425339366515837
+            ],
+            [
+              0.19998642318919285,
+              0.3730482009504413
+            ],
+            [
+              0.25001697101350895,
+              0.49850665218571816
+            ],
+            [
+              0.2999796347837893,
+              0.5820321339669609
+            ],
+            [
+              0.35001018260810535,
+              0.641388673390225
+            ],
+            [
+              0.3999728463783857,
+              0.6860149355057705
+            ],
+            [
+              0.4500033942027018,
+              0.7209232161713682
+            ],
+            [
+              0.5000339420270179,
+              0.7488460494162368
+            ],
+            [
+              0.5499966057972983,
+              0.7710441866205875
+            ],
+            [
+              0.6000271536216143,
+              0.7901346306143229
+            ],
+            [
+              0.6499898173918947,
+              0.806266318537859
+            ],
+            [
+              0.7000203652162107,
+              0.8201124903025602
+            ],
+            [
+              0.749983028986491,
+              0.8320963070238957
+            ],
+            [
+              0.8000135768108071,
+              0.8425965210012728
+            ],
+            [
+              0.8499762405810874,
+              0.8518488938583181
+            ],
+            [
+              0.9000067884054036,
+              0.8600844772967265
+            ],
+            [
+              0.949969452175684,
+              0.8672288123481492
+            ],
+            [
+              1.0,
+              0.8607019211187292
+            ]
+          ],
+          "false_alarm_background": {
+            "n_background": 3952,
+            "rate": 0.0010121457489878543
+          }
+        }
+      },
+      "accuracy_vs_snr": {
+        "bins": [
+          {
+            "lo": null,
+            "hi": -20.0,
+            "n": 0,
+            "accuracy": null
+          },
+          {
+            "lo": -20.0,
+            "hi": -15.0,
+            "n": 0,
+            "accuracy": null
+          },
+          {
+            "lo": -15.0,
+            "hi": -10.0,
+            "n": 0,
+            "accuracy": null
+          },
+          {
+            "lo": -10.0,
+            "hi": -5.0,
+            "n": 0,
+            "accuracy": null
+          },
+          {
+            "lo": -5.0,
+            "hi": 0.0,
+            "n": 0,
+            "accuracy": null
+          },
+          {
+            "lo": 0.0,
+            "hi": 5.0,
+            "n": 136,
+            "accuracy": 0.9558823529411765
+          },
+          {
+            "lo": 5.0,
+            "hi": 10.0,
+            "n": 3467,
+            "accuracy": 0.9754831266224402
+          },
+          {
+            "lo": 10.0,
+            "hi": 15.0,
+            "n": 4302,
+            "accuracy": 0.9239888423988842
+          },
+          {
+            "lo": 15.0,
+            "hi": 20.0,
+            "n": 888,
+            "accuracy": 0.9707207207207207
+          },
+          {
+            "lo": 20.0,
+            "hi": 25.0,
+            "n": 321,
+            "accuracy": 0.9252336448598131
+          },
+          {
+            "lo": 25.0,
+            "hi": 30.0,
+            "n": 218,
+            "accuracy": 0.9403669724770642
+          },
+          {
+            "lo": 30.0,
+            "hi": 35.0,
+            "n": 1167,
+            "accuracy": 0.9845758354755784
+          },
+          {
+            "lo": 35.0,
+            "hi": 40.0,
+            "n": 343,
+            "accuracy": 0.8396501457725948
+          },
+          {
+            "lo": 40.0,
+            "hi": null,
+            "n": 10340,
+            "accuracy": 0.7682785299806576
+          }
+        ],
+        "n_snr_unknown": 13306
+      },
+      "false_alarm_background": {
+        "argmax": {
+          "n_background": 3952,
+          "rate": 0.0010121457489878543,
+          "threshold": null,
+          "temperature": 1.0
+        },
+        "at_unknown_threshold": {
+          "n_background": 3952,
+          "rate": 0.0010121457489878543,
+          "threshold": 0.5028683711678362,
+          "temperature": 3.4064820468954276
+        }
+      }
+    }
+  },
+  "side_by_side": [
+    {
+      "split": "test",
+      "role": "headline",
+      "n_windows": 34488,
+      "window_macro_f1": 0.8252032808225715,
+      "window_accuracy": 0.860792159591742,
+      "burst_macro_f1": 0.7612836530172818,
+      "recording_macro_f1": 0.8721251332391364
+    }
+  ],
+  "gate_inputs": {
+    "ece_after": 0.008445271703935261,
+    "background_false_alarm": 0.0010121457489878543,
+    "leakage_ok": true,
+    "cross_test_reported": false,
+    "generalization_reported": false,
+    "cross_test_macro_f1": null,
+    "generalization_macro_f1": null
+  },
+  "gates": [
+    {
+      "gate": "beats_baseline",
+      "criterion": "mean macro-F1 over >= 3 seeds >= best baseline + 0.05",
+      "value": null,
+      "pass": null,
+      "note": "not measured"
+    },
+    {
+      "gate": "honest_generalization",
+      "criterion": "held-out drone model and cross_test reported next to the headline",
+      "value": {
+        "generalization": false,
+        "cross_test": false,
+        "generalization_macro_f1": null,
+        "cross_test_macro_f1": null
+      },
+      "pass": false,
+      "note": ""
+    },
+    {
+      "gate": "calibration",
+      "criterion": "ECE after temperature scaling <= 0.05",
+      "value": 0.008445271703935261,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "gate": "safe_failure",
+      "criterion": "background false-alarm rate at the threshold <= agreed rate",
+      "value": {
+        "rate": 0.0010121457489878543,
+        "agreed": null
+      },
+      "pass": null,
+      "note": "no agreed false-alarm rate yet"
+    },
+    {
+      "gate": "latency",
+      "criterion": "< 50.0 ms per burst on the laptop CPU",
+      "value": null,
+      "pass": null,
+      "note": ""
+    },
+    {
+      "gate": "leakage",
+      "criterion": "zero shared recordings or window hashes across splits",
+      "value": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "gate": "reproducible",
+      "criterion": "a fresh clone plus documented commands reproduces the numbers",
+      "value": null,
+      "pass": null,
+      "note": ""
+    }
+  ],
+  "notes": [
+    "burst results after the threshold skip the band prior (mcls.infer.priors)"
+  ],
+  "created": "2026-11-13T02:41:56+00:00",
+  "plots": [
+    "runs/baseline_knn_v1_w5/plots/confusion_test.png",
+    "runs/baseline_knn_v1_w5/plots/snr_test.png",
+    "runs/baseline_knn_v1_w5/plots/reliability_val.png"
+  ]
+}

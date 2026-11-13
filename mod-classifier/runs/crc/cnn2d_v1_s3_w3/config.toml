@@ -1,0 +1,37 @@
+[run]
+name = "cnn2d_v1_s3_w3"
+seed = 3
+out_dir = "runs"
+device = "auto"
+
+[data]
+manifest = "data/manifest_w2.jsonl"
+classes = "v1"
+max_windows_per_class = 30000
+cross_test_datasets = []
+use_simulated = false
+
+[model]
+name = "cnn2d"
+dropout = 0.2
+width = 32
+
+[optim]
+name = "adamw"
+lr = 0.001
+weight_decay = 0.01
+schedule = "onecycle"
+epochs = 40
+batch_size = 256
+label_smoothing = 0.1
+grad_clip = 1.0
+ema_decay = 0.999
+early_stop_patience = 8
+
+[augment]
+enabled = true
+snr_db_range = [0.0, 30.0]
+freq_offset_fraction = 0.05
+time_shift = true
+random_phase = true
+resample_jitter = 0.01

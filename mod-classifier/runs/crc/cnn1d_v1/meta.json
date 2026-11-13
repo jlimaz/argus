@@ -1,0 +1,13 @@
+{
+  "git_commit": "b4a9300403ea0451dc313bdeda1031dece3e1fa1",
+  "manifest_sha256": "54f80ef5d5cfb7fbb48074e55935ed60b5806e2cfabab47b5799445e0472e860",
+  "seed": 1,
+  "classes": [
+    "drone_link",
+    "wifi",
+    "bluetooth",
+    "background"
+  ],
+  "model": "cnn1d",
+  "created": "2026-11-12T16:27:53+00:00"
+}
