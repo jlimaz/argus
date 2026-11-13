@@ -4,7 +4,7 @@ How to fine-tune Laya on the RF training data on an Apple Silicon Mac (written f
 
 ## What Laya is asked
 
-One question, in `data/data-full.json`: which signal type is this observation? There are nine answer options. Eight are the shortwave signal types the Panoradio dataset covers, and `other` is everything else.
+One question, in `data/questions_20.json`: which signal type is this observation? There are nine answer options. Eight are the shortwave signal types the Panoradio dataset covers, and `other` is everything else.
 
 | Option | Panoradio modes behind it | Training rows | Test rows |
 |---|---|---|---|
@@ -25,7 +25,7 @@ Modes share an option when centre frequency, bandwidth and modulation cannot tel
 
 - **Only the bandwidth of a Panoradio row is measured.** The recordings carry no centre frequency, so the converter places each one on a frequency where its mode is operated, and it writes the modulation name from the mode. A high score therefore partly shows the model recovering those assignment rules. It is not evidence that the model recognises these signals off the air.
 - **The eight signal types are tested on rows of the same recordings set**, a random tenth of each. `other` is tested on 29 signal types that are not in the training data.
-- **A simple reference.** A nearest-neighbour classifier on the three fields scores 82.7% on the test file (80.4% balanced). Its weak spots are `weather_fax` (24 of 48) and `dominoex` (29 of 48), whose measured bandwidths overlap other types. Fine-tuned Laya scores 91.6% on the same file.
+- **A simple reference.** A nearest-neighbour classifier on the three fields scores 82.7% on the test file (80.4% balanced). Its weak spots are `weather_fax` (24 of 48) and `dominoex` (29 of 48), whose measured bandwidths overlap other types. Laya has not been run on this data yet.
 
 ## Results so far
 
@@ -34,7 +34,7 @@ Modes share an option when centre frequency, bandwidth and modulation cannot tel
 | Base Laya | 12 emitter families, 2,000 mock rows | 8.6% |
 | First fine-tune (2,000 items, 4 epochs) | same | 18.7% |
 | Second fine-tune (2,000 items, 5 epochs) | 12 families, 482 mock rows of unseen signal types | 21.0% |
-| Signal types (this setup, the checkpoint the app loads) | 9 options, 774 test rows | 91.6% |
+| Signal types (this setup) | 9 options, 774 test rows | not run yet |
 
 The earlier runs answered a different question on different data, so they are not comparable with this setup. The mock observations and the hand-written drone link table they used have been removed.
 
@@ -43,8 +43,9 @@ The earlier runs answered a different question on different data, so they are no
 ### 1. Set up
 
 ```bash
-git clone https://github.com/Gabriel-smm/argus.git
-cd argus
+git clone https://github.com/jlimaz/undefined-sprint-hack.git
+cd undefined-sprint-hack
+git checkout laya
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -56,7 +57,7 @@ pip install -r requirements.txt
 python -m finetune.build_dataset
 ```
 
-This takes a few seconds. It should report 6,964 training rows and 774 test rows, and it writes `finetune/out/train_items.pt`, `finetune/out/train_rows.jsonl` and `data/observations-full.jsonl`. The test file is committed, and the builder rewrites it identically.
+This takes a few seconds. It should report 6,964 training rows and 774 test rows, and it writes `finetune/out/train_items.pt`, `finetune/out/train_rows.jsonl` and `data/test_observations.jsonl`. The test file is committed, and the builder rewrites it identically.
 
 ### 3. Measure the baseline
 
@@ -112,8 +113,6 @@ The pipeline and the dashboard load `models/laya-rf-modes` by default, and stop 
 |---|---|---|
 | `data/train/panoradio_hf.jsonl` | 6,238, all used | [Panoradio HF](https://panoradio-sdr.de/radio-signal-classification-dataset/) (S. Scholl, 2019). Bandwidth and duty cycle are measured from the IQ vectors of 13 shortwave modes; SNR comes from the dataset. The centre frequency is assigned from where each mode is really operated. |
 | `data/train/sigid.jsonl` | 13,346, of which 1,500 used | [Artemis-DB](https://github.com/AresValley/Artemis-DB) v74, an export of sigidwiki.com. About 300 catalogued signals. Observations are drawn from each signal's listed frequencies, bandwidths and modulations. |
-| `data/train/nist_radar.jsonl` | one row per detected burst; not used by Laya | [NIST RF Dataset of Incumbent Radar Systems in the 3.5 GHz CBRS Band](https://data.nist.gov/od/id/mds2-2116), Group 1 subset 1 only (200 simulated pulsed-radar waveforms, 105 with a radar signal). Every feature is measured from the IQ samples by `pipeline/features.py`; the centre frequency is assigned (3.55 GHz). Labelled `pulsed_radar`, for the burst classifier, not for Laya. |
-| `data/train/dronerf.jsonl` | one row per detected burst; not used by Laya | [DroneRF](https://data.mendeley.com/datasets/f4c2b4n755/1) (Al-Sa'd et al., 2019, CC BY 4.0). Real 2.4 GHz recordings of three consumer drones in several flight modes, 40 MS/s real samples turned into IQ by `pipeline.features.real_to_iq`. Labelled `drone_link`; the band start (2400 or 2440 MHz) is assigned, the position inside it is measured. The no-drone recordings are skipped. |
 
 How the builder uses them:
 
@@ -137,26 +136,6 @@ python -m finetune.sources.sigid
 python -m finetune.sources.panoradio
 python -m finetune.build_dataset
 ```
-
-The NIST radar rows are separate: `python -m finetune.sources.nist_radar --fetch --hist` downloads one 2.5 GB subset into `data/raw/nist_radar/`, prints how the measured features compare with the label table, and writes `data/train/nist_radar.jsonl`. `pipeline/features.py` (`detect_bursts`) is the shared burst detector and feature measurer: training rows and the app's IQ files go through the same code.
-
-### Running the big sources on the CRC
-
-The NIST radar set is 200 files of 2.5 GB. On a laptop that is a day of downloading; on Notre Dame's CRC it is an array job of 200 one-core tasks, each of which downloads one file into the node's `/tmp`, measures it and deletes it. Only the rows (a few MB) come back.
-
-```bash
-ssh <netid>@crcfe01.crc.nd.edu
-git clone <repo> argus && cd argus
-module load python/3.12
-python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements-dev.txt
-qsub finetune/crc/nist_radar.sh          # or: qsub -t 1-50 finetune/crc/nist_radar.sh   (group 1 only)
-qstat -u $USER                           # watch; logs land in finetune/out/crc_logs/
-python finetune/crc/merge.py nist_radar  # when every task is done -> data/train/nist_radar.jsonl
-```
-
-`ARGUS_RAW` points the downloaders at another directory (the job sets it to `/tmp/$USER/argus_raw`). `finetune/sources/nist_radar_files.json` holds the size and sha256 of every NIST file, so a task that is re-run after a failure resumes the download and verifies it.
-
-DroneRF: download the 23 `.rar` archives (4 GB) from Mendeley into `data/raw/dronerf/`, then `python -m finetune.sources.dronerf --hist`. The CSVs are read straight from the archives (`unrar-cffi`), about 4 s per recording.
 
 ## Files
 

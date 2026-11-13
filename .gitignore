@@ -4,15 +4,4 @@ __pycache__/
 venv/
 data/raw/
 finetune/out/
-/models/
-models.zip
-.DS_Store
-__MACOSX/
-
-# mod-classifier: raw recordings, processed windows and training runs stay out of git
-mod-classifier/data/
-mod-classifier/runs/
-# Exception: the trained runs in mod-classifier/runs/crc/ were added with `git add -f`
-# and stay tracked. Add a new run the same way, on purpose.
-mod-classifier/.venv-ui/
-mod-classifier/ui/samples/
+models/

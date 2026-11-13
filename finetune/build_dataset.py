@@ -22,9 +22,9 @@ from pipeline.laya import HEAD_MAX_LEN, MAX_LEN, describe
 
 # Fine-tuning always starts from the published checkpoint.
 BASE_CHECKPOINT = "convaiinnovations/laya"
-QUESTIONS = ROOT / "data" / "data-full.json"
+QUESTIONS = ROOT / "data" / "questions_20.json"
 OUT = ROOT / "finetune" / "out"
-TEST = ROOT / "data" / "observations-full.jsonl"
+TEST = ROOT / "data" / "test_observations.jsonl"
 PANORADIO = TRAIN / "panoradio_hf.jsonl"
 SIGID = TRAIN / "sigid.jsonl"
 QUESTION = "mode"
